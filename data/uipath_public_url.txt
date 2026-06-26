@@ -1,0 +1,3 @@
+public_uipath_webhook: https://sworn-profusely-alongside.ngrok-free.dev/uipath/api/v1/uipath-webhook
+public_uipath_status: https://sworn-profusely-alongside.ngrok-free.dev/uipath/status
+public_uipath_demo: https://sworn-profusely-alongside.ngrok-free.dev/uipath/api/v1/demo/trigger-sample

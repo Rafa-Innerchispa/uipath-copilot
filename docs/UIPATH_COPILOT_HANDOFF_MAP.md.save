@@ -1,0 +1,25 @@
+# 🏗️ UIPATH SRE COPILOT — MAPA DE HANDOFF COMPLETO
+
+**Proyecto:** uipath-copilot | **Puerto Asignado:** 8097
+
+**Hackathon:** UiPath AgentHack 2026 — Track 1: UiPath Maestro Case
+
+**Ubicación canónica:** `/home/rlopez/projects/uipath-copilot/docs/UIPATH_COPILOT_HANDOFF_MAP.md`
+
+
+## 0. INSTRUCCIÓN PARA EL AGENTE DE CURSOR (LEER PRIMERO)
+
+1. Confirma que estás operando por **Remote SSH** en la ruta `/home/rlopez/projects/uipath-copilot/`.
+
+2. Tu motor de inferencia debe optimizarse para llamadas locales mediante **Ollama** (puerto 11434) ejecutando `qwen2.5-coder:7b` y `qwen2.5:14b-instruct`, aprovechando la memoria unificada del procesador AMD Ryzen 7 5700G.
+
+3. **NO TOQUES** ni levantes nada en los puertos de producción previos (:5173, :8100, :5190). Este proyecto opera estrictamente aislado en el puerto **8097**.
+
+4. Absolutamente **NINGÚN secreto, token o API Key** puede ser hardcodeado. Todo se lee dinámicamente desde el archivo `.env`.
+
+
+## 1. OBJETIVO DEL PROYECTO (TRACK 1: MAESTRO CASE)
+
+Construir un Copiloto de SRE soberano que administre incidentes y excepciones de infraestructura en el servidor. 
+
+UiPath Automation Cloud actúa como la capa superior de gobernanza y control transaccional (Human-in-the-Loop), mientras que este repositorio en el puerto 8097 ejecuta el backend de remediación e interactúa con nuestro pool de agentes locales.

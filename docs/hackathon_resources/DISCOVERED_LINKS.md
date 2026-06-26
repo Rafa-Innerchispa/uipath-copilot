@@ -1,0 +1,90 @@
+# Links descubiertos — UiPath AgentHack 2026
+
+- Descubiertos: **695**
+- Descargados: **10**
+- Pendientes: **691** (ver JSON completo)
+
+Para bajar más: `python3 scripts/scrape_hackathon_resources.py --bootstrap --max-pages 80`
+
+## Pendientes (prioridad alta primero)
+
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/conversational-agents-design.md
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/supplier-onboarding
+- [0] https://docs.uipath.com/zh-CN/agents/automation-cloud/latest/user-guide/about-this-guide
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-maestro-debug
+- [0] https://docs.uipath.com/es/automation-cloud/automation-cloud/latest/sap/configuring-the-connectio
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/tasks
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/working-with-files-in-maestro-processes
+- [0] https://docs.uipath.com/ja/agents/automation-cloud/latest/user-guide/about-this-guide
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-rpa-add-test-data-variation
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/send-task
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/publish-the-agent
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/exit-codes
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/whats-new
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-platform-groups
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-agent-file
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-rpa-analyze
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-test-manager-customfield
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/tasks-in-bpmn-modeling
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/service-task
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/quickstart
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/introduction-to-process-optimization
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/variables-and-expression-editor
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/keyboard-shortcuts-for-maestro
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-agent-eval
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-rpa-install-data-fabric-entities
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/coded-agents-licensing
+- [0] https://docs.uipath.com/de/agents/automation-cloud/latest/user-guide/about-this-guide
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-logout
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/data-fabric-operations
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/instance-throttling
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/maestro-bpmn-vs-maestro-case-when-to-use-case-management
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-solution-packages
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/conversational-agents-slack
+- [0] https://docs.uipath.com/automation-cloud/automation-cloud/latest/sap/using-the-uipath-connector-trigger
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-vss-scaffold
+- [0] https://docs.uipath.com/zh-CN/maestro/automation-cloud/latest/user-guide/overview
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/getting-started-with-uipath-agents
+- [0] https://docs.uipath.com/_next/static/media/MaterialIcons-Outlined.c4976997.woff2
+- [0] https://docs.uipath.com/_next/static/media/noto-sans-600-normal.740e37ed.woff2
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/enriching-process-optimization-with-external-data
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/references-templates
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/introduction-to-process-monitoring
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/how-to-model-primary-secondary-stages
+- [0] https://docs.uipath.com/llms-automation-cloud.txt
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/choosing-the-best-model-for-your-agent
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/agents-workspace
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/how-to-configure-a-rework-loop-re-entry
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-rpa-get-errors
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-flow-validate
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/agent-evaluations
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/autopilot-for-maestro
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/licensing-information
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-resource-webhooks
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-codedagent
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/howto-run-tests
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-flow-registry
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-is-resources
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/introduction-to-process-monitoring
+- [0] https://docs.uipath.com/clipboard-ai/standalone/latest
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/using-uipath-cli-overview
+- [0] https://docs.uipath.com/automation-cloud/automation-cloud/latest/sap/extracting-document-data
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-codedapp-publish
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-orchestrator-roles
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/agent-escalations
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-solution-project
+- [0] https://docs.uipath.com/de/clipboard-ai/standalone/latest
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/conversational-agents-evaluatio
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/conversational-agents-getting-started
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-test-manager-testsets
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/limitations
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-codedapp-deploy
+- [0] https://docs.uipath.com/uipath-cli/standalone/latest/user-guide/uip-api-workflow-build
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/maestro-bpmn-vs-maestro-case-when-to-use-case-management
+- [0] https://docs.uipath.com/_next/static/media/uipath.1396d2f4.svg
+- [0] https://docs.uipath.com/es/maestro/automation-cloud/latest/user-guide/process-optimization-app-in-process-mining
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/event-subprocess
+- [0] https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/send-task
+- [0] https://docs.uipath.com/automation-cloud/automation-cloud/latest/sap/accessing-studio
+- [0] https://docs.uipath.com/agents/automation-cloud/latest/user-guide/conversational-agents-apps-embedding

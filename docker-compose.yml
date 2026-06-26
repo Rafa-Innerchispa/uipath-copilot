@@ -1,0 +1,16 @@
+version: '3.8'
+
+networks:
+  swarm_network:
+    external: true
+    name: innerspark-devsecops-swarm_default
+
+services:
+  app:
+    build: .
+    container_name: uipath_copilot
+    ports:
+      - "8097:8097"
+    restart: unless-stopped
+    networks:
+      - swarm_network

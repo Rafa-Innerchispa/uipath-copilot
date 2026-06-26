@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ralphi IA v2.0 — Panel de Acceso Único</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #05070f;
+      --surface: rgba(255, 255, 255, 0.01);
+      --surface-hover: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.04);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --accent: #8b5cf6;
+      --accent-rgb: 139, 92, 246;
+      --blue: #3b82f6;
+      --radius: 12px;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: "Outfit", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    .background-glows {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    
+    .glow-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(140px);
+      opacity: 0.45;
+      mix-blend-mode: screen;
+      animation: floatBlob 20s infinite alternate ease-in-out;
+    }
+    
+    .glow-blob-1 {
+      top: -10%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+    }
+    
+    .glow-blob-2 {
+      bottom: -10%;
+      right: -10%;
+      width: 55vw;
+      height: 55vw;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+      animation-delay: -5s;
+    }
+    
+    @keyframes floatBlob {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(5%, 5%) scale(1.05); }
+    }
+    
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      position: relative;
+      z-index: 10;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    
+    .logos {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .logos img {
+      height: 32px;
+      opacity: 0.6;
+      transition: all 0.3s ease;
+    }
+    
+    .logos img:hover {
+      opacity: 0.9;
+    }
+    
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 50%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    
+    .subtitle {
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.6;
+      font-size: 0.85rem;
+    }
+    
+    .host-pill {
+      display: inline-flex;
+      gap: 0.5rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem;
+      border-radius: 99px;
+    }
+    
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 2.5rem;
+    }
+    
+    .tab {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      padding: 0.4rem 1rem;
+      border-radius: 99px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .tab:hover {
+      border-color: var(--border-hover);
+      color: #fff;
+    }
+    
+    .tab.active {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.08);
+      color: #fff;
+    }
+    
+    .featured {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .featured-card, .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .featured-card {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.02), rgba(59, 130, 246, 0.01));
+      border-color: rgba(139, 92, 246, 0.1);
+    }
+    
+    .featured-card:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.04), rgba(59, 130, 246, 0.02));
+      transform: translateY(-1px);
+    }
+    
+    .card:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-hover);
+      transform: translateY(-1px);
+    }
+    
+    .featured-card h2, .card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    
+    .card-icon {
+      font-size: 1.1rem;
+    }
+    
+    .featured-card p, .card p {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      font-weight: 300;
+      flex-grow: 1;
+    }
+    
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.8rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.02);
+      padding-top: 0.5rem;
+    }
+    
+    .port {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    
+    .status {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.1rem 0.4rem;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    
+    .status.up {
+      background: rgba(34, 197, 94, 0.06);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.1);
+    }
+    
+    .status.unk {
+      background: rgba(255, 255, 255, 0.01);
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+    
+    .voice-banner {
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.02), rgba(59, 130, 246, 0.01));
+      border: 1px solid rgba(139, 92, 246, 0.08);
+      border-radius: var(--radius);
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .voice-banner a {
+      color: #fff;
+      background: var(--accent);
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .voice-banner a:hover {
+      background: #7c3aed;
+    }
+    
+    footer {
+      margin-top: 4rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.02);
+      padding-top: 2rem;
+    }
+    
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="background-glows">
+    <div class="glow-blob glow-blob-1"></div>
+    <div class="glow-blob glow-blob-2"></div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <div class="logos">
+        <img src="assets/logo_pcdoctor.png" alt="PC Doctor" />
+        <img src="assets/logo_innerchispa.png" alt="InnerChispa LLC" />
+      </div>
+      <h1>Ralphi IA v2.0</h1>
+      <p class="subtitle">Ecosistema multiempresa unificado. PC Doctor (ERP operativo) y marcas registradas InnerSpark/InnerChispa LLC (inteligencia artificial, agentes y automatización).</p>
+      <div style="display:flex; justify-content:center; align-items:center; gap:0.5rem; margin-top:0.5rem; flex-wrap:wrap;">
+        <div class="host-pill"><span>Servidor</span> <strong id="host-label">192.168.1.4</strong></div>
+        <form action="/api/auth/logout" method="POST" style="margin: 0;">
+            <button type="submit" style="color: #ef4444; background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.1); padding: 0.3rem 0.8rem; border-radius: 99px; font-weight: 600; cursor: pointer; font-size: 0.72rem; transition: all 0.2s;">Cerrar Sesión</button>
+        </form>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-filter="all">Todo</button>
+      <button class="tab" data-filter="pcdoctor">PC Doctor</button>
+      <button class="tab" data-filter="innerchispa">InnerChispa / IA</button>
+    </div>
+
+    <div class="voice-banner" data-company="innerchispa">
+      <div>
+        <strong style="font-size:0.85rem;">🎙️ Transcriptor de Voz Activo (Whisper)</strong>
+        <p style="color:var(--muted);font-size:.75rem;margin-top:.1rem">Motor local Whisper en puerto :9001. Transcripción automática de audio en visitas técnicas e inspecciones.</p>
+      </div>
+      <a href="#" id="whisper-link" target="_blank" rel="noopener">Abrir Docs de Whisper</a>
+    </div>
+
+    <div class="featured" id="featured"></div>
+    <div id="sections"></div>
+
+    <!-- Active Registered Users -->
+    <div style="background: rgba(255, 255, 255, 0.005); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.1rem; margin-top: 2rem;">
+      <h3 style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+        👤 Usuarios Registrados en el Servidor
+      </h3>
+      <div id="registered-users-list" style="display: flex; flex-wrap: wrap; gap: 0.35rem; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;">
+        <span style="color: var(--muted);">Obteniendo lista de usuarios...</span>
+      </div>
+    </div>
+
+    <footer>
+      <p>Agrega <strong>http://<span id="host-foot">192.168.1.4</span>:8800</strong> a tus marcadores.</p>
+      <p>Ajustes de marcas y facturación local → <a href="#" id="admin-link">PC Doctor Admin → Configuración</a></p>
+    </footer>
+  </div>
+
+  <script>
+    const HOST = window.location.hostname || "192.168.1.4";
+    document.getElementById("host-label").textContent = HOST;
+    document.getElementById("host-foot").textContent = HOST;
+    document.getElementById("whisper-link").href = `http://${HOST}:9001/docs`;
+    document.getElementById("admin-link").href = `http://${HOST}:5173/settings`;
+
+    let allItems = [];
+    let filter = "all";
+
+    function url(s) { return `http://${HOST}:${s.port}${s.path || ""}`; }
+
+    function companyMatch(item) {
+      if (filter === "all") return true;
+      if (item.company === "both") return true;
+      return item.company === filter;
+    }
+
+    function cardHtml(s, featured) {
+      const tag = featured ? "h2" : "h3";
+      const cls = featured ? "featured-card" : "card";
+      if (s.web === false) return "";
+      return `<a class="${cls}" data-company="${s.company}" href="${url(s)}" target="_blank" rel="noopener">
+        <${tag}><span class="card-icon">${s.icon || ""}</span> ${s.name}</${tag}>
+        <p>${s.desc}</p>
+        <div class="meta"><span class="port">:${s.port}</span><span class="status unk" data-port="${s.port}">···</span></div>
+      </a>`;
+    }
+
+    function render() {
+      const feat = document.getElementById("featured");
+      const sec = document.getElementById("sections");
+      feat.innerHTML = "";
+      sec.innerHTML = "";
+      
+      const featured = allItems.filter((s) => s.featured && companyMatch(s));
+      featured.forEach((s) => feat.insertAdjacentHTML("beforeend", cardHtml(s, true)));
+
+      const rest = allItems.filter((s) => !s.featured && companyMatch(s) && s.web !== false);
+      const bySec = {};
+      rest.forEach((s) => (bySec[s.section] ||= []).push(s));
+      
+      for (const [title, items] of Object.entries(bySec)) {
+        const d = document.createElement("div");
+        d.innerHTML = `<div class="section-title">${title}</div><div class="grid">${items.map((s) => cardHtml(s, false)).join("")}</div>`;
+        sec.appendChild(d);
+      }
+      
+      document.querySelector(".voice-banner").classList.toggle("hidden", filter === "pcdoctor");
+      checkPorts();
+    }
+
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        filter = btn.dataset.filter;
+        render();
+      });
+    });
+
+    async function checkPorts() {
+      const ports = [...new Set(allItems.filter((s) => s.web !== false).map((s) => s.port))];
+      for (const port of ports) {
+        const els = document.querySelectorAll(`[data-port="${port}"]`);
+        let st = "unk";
+        try {
+          const c = new AbortController();
+          const t = setTimeout(() => c.abort(), 1500);
+          await fetch(`http://${HOST}:${port}/`, { mode: "no-cors", signal: c.signal });
+          clearTimeout(t);
+          st = "up";
+        } catch {}
+        els.forEach((el) => { 
+          el.className = `status ${st}`; 
+          el.textContent = st === "up" ? "activo" : "verificar"; 
+        });
+      }
+    }
+
+    fetch("services.json")
+      .then((r) => r.json())
+      .then((cfg) => {
+        allItems = [
+          ...cfg.featured.map((s) => ({ ...s, featured: true })),
+          ...cfg.services.map((s) => ({ ...s, featured: false })),
+        ];
+        render();
+      })
+      .catch(() => {
+        allItems = [{ featured: true, company: "both", name: "Error cargando servicios", desc: "Recarga la página", port: 8800, icon: "⚠️" }];
+        render();
+      });
+
+    fetch("/api/users")
+      .then(r => r.json())
+      .then(users => {
+        const uList = document.getElementById("registered-users-list");
+        uList.innerHTML = users.map(u => `<span style="background: rgba(139,92,246,0.02); border: 1px solid rgba(139,92,246,0.06); color: #c084fc; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 500;">👤 ${u}</span>`).join(" ");
+      })
+      .catch(() => {
+        document.getElementById("registered-users-list").innerHTML = '<span style="color: var(--muted);">No se pudieron cargar los usuarios.</span>';
+      });
+  </script>
+</body>
+</html>

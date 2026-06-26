@@ -1,0 +1,8 @@
+{
+    "project_name": "uipath-copilot",
+    "hackathon_name": "UiPath AgentHack 2026",
+    "hackathon_url": "https://uipath-agenthack.devpost.com/",
+    "assigned_port": 8097,
+    "server_ip": "192.168.1.4",
+    "visibility": "public"
+}
