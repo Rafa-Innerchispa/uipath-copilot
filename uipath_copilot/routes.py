@@ -91,6 +91,52 @@ def api_get_case(case_id: str):
     return doc
 
 
+@router.get("/demo/scenarios")
+def demo_scenarios():
+    """Escenarios anclados a datos reales PC Doctor — para video Devpost."""
+    db = get_db()
+    client = db.clients.find_one({"ruc": {"$exists": True, "$ne": ""}}, {"_id": 0, "name": 1, "ruc": 1, "client_id": 1})
+    quote = db.quotes.find_one({}, {"_id": 0, "quote_id": 1, "total": 1})
+    return {
+        "webhook_url": f"{PUBLIC_BASE_URL}/api/v1/uipath-webhook",
+        "scenarios": [
+            {
+                "id": "duplicate_client",
+                "title": "Cliente duplicado (RUC)",
+                "incident_type": "client_duplicate",
+                "severity": "high",
+                "sample_payload": {
+                    "case_id": "REPLACE-WITH-MAESTRO-UUID",
+                    "stage": "Intake",
+                    "incident_type": "client_duplicate",
+                    "client_name": client.get("name") if client else "UArtes",
+                    "ruc": client.get("ruc") if client else "0991386866001",
+                    "raw_logs": "Posible duplicado en alta de cliente tras visita de campo",
+                },
+            },
+            {
+                "id": "quote_gate",
+                "title": "Cotización bloqueada por gates",
+                "incident_type": "quote_gate_blocked",
+                "severity": "medium",
+                "sample_payload": {
+                    "case_id": "REPLACE-WITH-MAESTRO-UUID",
+                    "stage": "Intake",
+                    "incident_type": "quote_gate_blocked",
+                    "raw_logs": f"Gate DB38 en cotización {quote.get('quote_id') if quote else 'PCD-COT'}",
+                },
+            },
+            {
+                "id": "field_exception",
+                "title": "Excepción post-inspección",
+                "incident_type": "field_inspection_exception",
+                "severity": "high",
+                "trigger": f"GET {PUBLIC_BASE_URL}/api/v1/demo/trigger-sample",
+            },
+        ],
+    }
+
+
 @router.get("/demo/trigger-sample")
 def demo_trigger_sample():
     """

@@ -57,6 +57,7 @@ def status():
             "cases": "GET /api/v1/cases",
             "project_docs": "GET /api/v1/project-docs",
             "demo_real": "GET /api/v1/demo/trigger-sample",
+            "demo_scenarios": "GET /api/v1/demo/scenarios",
         },
     }
 

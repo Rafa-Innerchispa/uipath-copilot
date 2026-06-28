@@ -10,6 +10,7 @@ from tools.gates import check_duplicate_client, check_hub_first, check_placehold
 from tools.mongo import get_db
 from tools.ollama_chat import ollama_available, ollama_chat
 from uipath_copilot.case_store import append_event, save_case
+from uipath_copilot.action_center_client import create_hitl_task
 from uipath_copilot.maestro_client import transition_case
 from uipath_copilot.settings import OLLAMA_MODEL_ANALYSIS, OLLAMA_MODEL_CODER
 
@@ -187,8 +188,17 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
 
     maestro_action = _next_maestro_action(stage, needs_human)
     transition_result = None
+    action_center_result = None
     if maestro_action:
         transition_result = transition_case(case_id, maestro_action, comment=incident)
+
+    if needs_human:
+        action_center_result = create_hitl_task(
+            case_id=case_id,
+            title=f"[PC Doctor] Aprobación caso {case_id[:8]}…",
+            description=f"Excepción `{incident}` — revisar gates y reporte en backend :8097.",
+            priority="High" if severity in ("high", "critical", "alta") else "Medium",
+        )
 
     record = save_case(
         {
@@ -201,6 +211,7 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
             "analysis": analysis,
             "report_markdown": report_md,
             "maestro_transition": transition_result,
+            "action_center_task": action_center_result,
             "payload_snapshot": payload,
             "events": [{"type": "processed", "stage": stage}],
         }
@@ -213,5 +224,6 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         "findings": findings,
         "report_markdown": report_md,
         "maestro_transition": transition_result,
+        "action_center_task": action_center_result,
         "record": record,
     }

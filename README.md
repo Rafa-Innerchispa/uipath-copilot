@@ -65,7 +65,7 @@ MONGO_DB=pcdoctor_swarm
 ## Documentación
 
 - **[`docs/PROYECTO_MAESTRO_COMPLETO.md`](docs/PROYECTO_MAESTRO_COMPLETO.md)** — estado completo del proyecto (documento maestro)
-- [`docs/COMMUNITY_LICENSE_ROADMAP.md`](docs/COMMUNITY_LICENSE_ROADMAP.md) — qué activar con licencia Community
+- [`docs/GUIA_PLATAFORMA_UIPATH_PARA_JURADO.md`](docs/GUIA_PLATAFORMA_UIPATH_PARA_JURADO.md) — **qué activar en UiPath Cloud para ganar puntos**
 - [`docs/SUBMISION_JURADO.md`](docs/SUBMISION_JURADO.md) — guion video + Devpost
 - [`docs/HACKATHON_REQUIREMENTS.md`](docs/HACKATHON_REQUIREMENTS.md) — checklist jurado
 - [`docs/TU_CHECKLIST_3_CLICKS.md`](docs/TU_CHECKLIST_3_CLICKS.md) — acciones manuales UiPath

@@ -18,6 +18,7 @@ CANONICAL_DOCS: list[tuple[str, str, list[str]]] = [
     ("hackathon-requirements", "docs/HACKATHON_REQUIREMENTS.md", ["jurado", "checklist"]),
     ("submision-jurado", "docs/SUBMISION_JURADO.md", ["devpost", "video"]),
     ("tu-checklist", "docs/TU_CHECKLIST_3_CLICKS.md", ["manual", "oauth"]),
+    ("guia-plataforma-jurado", "docs/GUIA_PLATAFORMA_UIPATH_PARA_JURADO.md", ["jurado", "uipath", "video"]),
     ("community-roadmap", "docs/COMMUNITY_LICENSE_ROADMAP.md", ["licencia", "roadmap"]),
     ("agents-md", "AGENTS.md", ["cursor", "agentes"]),
     ("readme", "README.md", ["repo", "arranque"]),
