@@ -37,9 +37,14 @@ def save_case(doc: dict[str, Any]) -> dict[str, Any]:
     existing = col.find_one({"case_id": case_id}, {"_id": 0})
     if existing:
         doc["created_at"] = existing.get("created_at", _now())
+        if "events" not in doc:
+            doc["events"] = existing.get("events", [])
     else:
         doc["created_at"] = _now()
+        doc.setdefault("events", [])
     doc["updated_at"] = _now()
+    if not doc.get("client_name") and doc.get("payload_snapshot"):
+        doc["client_name"] = doc["payload_snapshot"].get("client_name")
     col.update_one({"case_id": case_id}, {"$set": doc}, upsert=True)
     return col.find_one({"case_id": case_id}, {"_id": 0}) or doc
 

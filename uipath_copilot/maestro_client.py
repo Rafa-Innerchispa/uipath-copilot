@@ -54,36 +54,38 @@ def get_access_token() -> str:
     return _token_cache["access_token"]
 
 
-def transition_case(case_id: str, action: str, *, comment: str = "") -> dict[str, Any]:
+def maestro_handoff_note(stage: str, needs_human: bool) -> dict[str, Any]:
     """
-    Avanza un caso Maestro. `action` debe coincidir con la transición definida en el proceso.
-    Ejemplos típicos: ToInvestigation, ToRemediation, ToApproval, Complete.
+    Maestro Case Management avanza por tareas completadas en cloud (event-driven),
+    no por TransitionState OData (BPMN clásico — devuelve HTTP 405 en Case).
     """
-    if not uipath_configured():
-        return {"ok": False, "skipped": True, "reason": "UIPATH_* no configurado"}
-
-    token = get_access_token()
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
+    next_stage = {
+        "Intake": "Investigation",
+        "Investigation": "Remediation",
+        "Remediation": "Approval" if needs_human else "Complete",
+        "Approval": "Complete",
+    }.get(stage, "Investigation")
+    return {
+        "mode": "stage_task_complete",
+        "stage_processed": stage,
+        "expected_next_stage": next_stage,
+        "needs_human": needs_human,
+        "note": (
+            "Configura API Workflow en Intake, Investigation y Remediation "
+            "con el mismo webhook y campo stage. Approval = User task en Action Center."
+        ),
     }
-    if UIPATH_ORG_UNIT_ID:
-        headers["X-UIPATH-OrganizationUnitId"] = UIPATH_ORG_UNIT_ID
 
-    url = (
-        f"{UIPATH_BASE_URL}/odata/Cases({case_id})"
-        "/UiPath.Server.Configuration.OData.TransitionState"
-    )
-    payload: dict[str, Any] = {"Action": action}
-    if comment:
-        payload["Comment"] = comment
 
-    r = requests.post(url, headers=headers, json=payload, timeout=45)
-    try:
-        data = r.json()
-    except Exception:
-        data = {"raw": r.text[:500]}
-    return {"ok": r.ok, "http_status": r.status_code, "data": data, "action": action}
+def transition_case(case_id: str, action: str, *, comment: str = "") -> dict[str, Any]:
+    """Legacy BPMN — no usar con Maestro Case Management."""
+    return {
+        "ok": False,
+        "skipped": True,
+        "reason": "Maestro Case usa tareas por etapa; ver maestro_handoff",
+        "action": action,
+        "case_id": case_id,
+    }
 
 
 def maestro_status() -> dict[str, Any]:

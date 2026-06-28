@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="ngrok-skip-browser-warning" content="true" />
+  <title>PC Doctor — Maestro Case Copilot | InnerChispa</title>
+  <style>
+    :root {
+      --bg: #0b1120; --surface: #1e293b; --surface2: #0f172a;
+      --text: #e2e8f0; --muted: #94a3b8; --ok: #4ade80; --warn: #fbbf24; --bad: #f87171; --accent: #60a5fa;
+      --term-bg: #020617; --term-h: 220px;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; line-height: 1.5; }
+    a { color: var(--accent); }
+    .topbar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem;
+      padding: .85rem 1.25rem; background: var(--surface2); border-bottom: 1px solid #334155;
+    }
+    .brand { display: flex; align-items: center; gap: .75rem; }
+    .brand h1 { font-size: 1.05rem; margin: 0; font-weight: 700; }
+    .brand .sub { font-size: .78rem; color: var(--muted); margin: 0; }
+    .toolbar { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+    button, .btn {
+      background: var(--accent); color: #0f172a; border: 0; border-radius: 8px;
+      padding: .45rem .85rem; cursor: pointer; font-weight: 600; font-size: .82rem;
+    }
+    button.secondary { background: #334155; color: var(--text); }
+    button.danger { background: #b91c1c; color: #fff; }
+    button.ghost { background: transparent; border: 1px solid #475569; color: var(--text); }
+    .layout { display: grid; grid-template-columns: 1fr min(420px, 38vw); gap: 0; min-height: calc(100vh - 56px - var(--term-h)); }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+    .main { padding: 1rem 1.25rem; overflow: auto; }
+    .aside { padding: 1rem; background: var(--surface2); border-left: 1px solid #334155; overflow: auto; }
+    @media (max-width: 960px) { .aside { border-left: 0; border-top: 1px solid #334155; } }
+    .intro { background: var(--surface); border: 1px solid #334155; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; font-size: .88rem; }
+    .intro ul { margin: .5rem 0 0 1.1rem; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .6rem; margin-bottom: 1rem; }
+    .card { background: var(--surface); border: 1px solid #334155; border-radius: 10px; padding: .75rem; }
+    .card h3 { margin: 0 0 .3rem; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .pill { display: inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+    .pill.ok { background: #14532d; color: var(--ok); }
+    .pill.bad { background: #450a0a; color: var(--bad); }
+    .pill.warn { background: #451a03; color: var(--warn); }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    th, td { text-align: left; padding: .5rem .35rem; border-bottom: 1px solid #334155; vertical-align: top; }
+    th { color: var(--muted); font-size: .72rem; text-transform: uppercase; }
+    tr.sel, tbody tr:hover { background: #33415555; cursor: pointer; }
+    tr.sel { outline: 1px solid var(--accent); }
+    .stages { display: flex; gap: .3rem; flex-wrap: wrap; margin: .5rem 0; }
+    .stage { padding: .2rem .5rem; border-radius: 6px; background: #334155; font-size: .68rem; }
+    .stage.done { background: #14532d; color: var(--ok); }
+    .stage.current { outline: 2px solid var(--accent); }
+    .report { white-space: pre-wrap; background: var(--term-bg); padding: .75rem; border-radius: 8px; font-size: .75rem; max-height: 340px; overflow: auto; border: 1px solid #1e293b; }
+    .finding { display: block; margin: .25rem 0; font-size: .75rem; }
+    .term-wrap {
+      height: var(--term-h); background: var(--term-bg); border-top: 1px solid #334155;
+      display: flex; flex-direction: column;
+    }
+    .term-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .35rem .75rem; font-size: .72rem; color: var(--muted); background: #0f172a;
+    }
+    #terminal {
+      flex: 1; overflow: auto; padding: .5rem .75rem; font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: .72rem; line-height: 1.45; color: #a5f3fc;
+    }
+    .line-ok { color: #86efac; } .line-err { color: #fca5a5; } .line-warn { color: #fde047; } .line-info { color: #93c5fd; }
+    .err-banner { background: #450a0a; color: #fecaca; padding: .6rem 1rem; font-size: .85rem; display: none; }
+    .err-banner.show { display: block; }
+    .links { font-size: .75rem; color: var(--muted); margin-top: .75rem; }
+    .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .5rem; margin-bottom: 1rem; }
+    .scenario-btn { text-align: left; background: #0f172a; border: 1px solid #334155; color: var(--text); border-radius: 8px; padding: .65rem; cursor: pointer; font-size: .78rem; }
+    .scenario-btn:hover { border-color: var(--accent); }
+    .scenario-btn strong { display: block; font-size: .82rem; margin-bottom: .25rem; }
+    .scenario-btn span { color: var(--muted); font-size: .72rem; }
+    textarea { width: 100%; background: #0f172a; border: 1px solid #334155; color: var(--text); border-radius: 8px; padding: .5rem; font-size: .82rem; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div>
+        <h1 id="t-title">PC Doctor — Maestro Case Copilot</h1>
+        <p class="sub"><a href="https://www.innerchispa.us" target="_blank" rel="noopener">InnerChispa</a> · UiPath AgentHack 2026 · Track 1</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button type="button" class="ghost" id="btn-lang">ES</button>
+      <button type="button" class="secondary" id="btn-refresh">Refresh</button>
+    </div>
+  </header>
+
+  <div class="err-banner" id="err-banner"></div>
+
+  <div class="layout">
+    <section class="main">
+      <div class="intro" id="intro"></div>
+      <div class="card" style="margin-bottom:1rem">
+        <h3 id="t-scenarios-h" style="margin:0 0 .5rem;font-size:.85rem">Demo consultations (distinct real clients)</h3>
+        <p id="t-scenarios-sub" style="margin:0 0 .75rem;font-size:.78rem;color:var(--muted)"></p>
+        <div class="scenario-grid" id="scenario-grid"></div>
+        <p class="links" id="action-center-link"></p>
+      </div>
+      <div class="grid" id="status-grid"></div>
+
+      <div class="card">
+        <h3 id="t-cases-h">Operational cases (live MongoDB)</h3>
+        <table>
+          <thead><tr>
+            <th id="th-client">Client</th><th id="th-scenario">Consultation</th><th id="th-incident">Incident</th><th id="th-stage">Stage</th>
+            <th id="th-stages">Progress</th><th id="th-hitl">HITL</th><th id="th-appr">Approval</th>
+          </tr></thead>
+          <tbody id="cases-body"></tbody>
+        </table>
+        <p class="links" id="links"></p>
+      </div>
+    </section>
+
+    <aside class="aside" id="detail-panel">
+      <h3 id="t-detail-h" style="margin-top:0">Case detail</h3>
+      <p id="detail-empty" class="sub">Select a case to validate gates, Ollama report, and Maestro stage.</p>
+      <div id="detail-content" style="display:none">
+        <div class="stages" id="m-stages"></div>
+        <div id="m-meta"></div>
+        <div id="m-findings"></div>
+        <textarea id="m-comment" rows="2" placeholder="Approval comment (optional)"></textarea>
+        <div style="display:flex;gap:.5rem;margin:.5rem 0;flex-wrap:wrap">
+          <button type="button" id="btn-approve">Approve</button>
+          <button type="button" class="danger" id="btn-reject">Reject</button>
+        </div>
+        <div class="report" id="m-report"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="term-wrap">
+    <div class="term-head">
+      <span id="t-term-label">Live connection log</span>
+      <button type="button" class="ghost" id="btn-clear-term" style="padding:.2rem .5rem;font-size:.68rem">Clear</button>
+    </div>
+    <div id="terminal"></div>
+  </div>
+
+  <script>
+    const STAGES = ["Intake", "Investigation", "Remediation", "Approval"];
+    const I18N = {
+      en: {
+        title: "PC Doctor — Maestro Case Copilot",
+        introTitle: "What this panel validates",
+        introHtml: `<p><strong>Governed orchestration</strong> (UiPath Maestro Case in cloud) + <strong>sovereign execution</strong> on PC Doctor servers (MongoDB, Ollama, WhatsApp).</p>
+          <ul>
+            <li><strong>Maestro</strong> drives Intake → Investigation → Remediation → Approval.</li>
+            <li><strong>Webhook</strong> hits this backend with real PC Doctor data (clients, quotes, reports).</li>
+            <li><strong>Gates</strong> block duplicates, validate hub, and audit MongoDB live counts.</li>
+            <li><strong>Ollama</strong> (local LLM) generates remediation analysis — no cloud LLM for sensitive ops.</li>
+            <li><strong>HITL</strong> — human approval via Action Center (UiPath) or this dashboard.</li>
+          </ul>`,
+        casesH: "Operational cases (live MongoDB)",
+        client: "Client", incident: "Incident", stage: "Stage", progress: "Progress", hitl: "HITL", appr: "Approval",
+        pending: "Pending", no: "No", detailH: "Case detail", detailEmpty: "Select a case to validate gates, Ollama report, and Maestro stage.",
+        approve: "Approve", reject: "Reject", commentPh: "Approval comment (optional)",
+        refresh: "Refresh", termLabel: "Live connection log", clear: "Clear",
+        noCases: "No cases yet — run a demo consultation below or Start Job in Maestro.",
+        scenariosH: "Demo consultations (distinct real clients)",
+        scenariosSub: "Each button creates a new case from a different MongoDB client/quote — not always UArtes.",
+        scenarioRun: "Run consultation",
+        actionCenter: "Action Center (UiPath HITL)",
+        consultation: "Consultation",
+        connErr: "Cannot reach API. If using ngrok, click “Visit Site” on the warning page once, then refresh.",
+        langBtn: "ES",
+      },
+      es: {
+        title: "PC Doctor — Maestro Case Copilot",
+        introTitle: "Qué valida este panel",
+        introHtml: `<p><strong>Orquestación gobernada</strong> (UiPath Maestro en cloud) + <strong>ejecución soberana</strong> en servidores PC Doctor (MongoDB, Ollama, WhatsApp).</p>
+          <ul>
+            <li><strong>Maestro</strong> conduce Intake → Investigation → Remediation → Approval.</li>
+            <li><strong>Webhook</strong> con datos reales PC Doctor (clientes, cotizaciones, informes).</li>
+            <li><strong>Gates</strong> anti-duplicado, hub, auditoría MongoDB en vivo.</li>
+            <li><strong>Ollama</strong> (LLM local) genera análisis — sin LLM cloud para datos sensibles.</li>
+            <li><strong>HITL</strong> — aprobación humana en Action Center o este panel.</li>
+          </ul>`,
+        casesH: "Casos operativos (MongoDB en vivo)",
+        client: "Cliente", incident: "Incidente", stage: "Etapa", progress: "Progreso", hitl: "HITL", appr: "Aprobación",
+        pending: "Pendiente", no: "No", detailH: "Detalle del caso", detailEmpty: "Selecciona un caso para validar gates, informe Ollama y etapa Maestro.",
+        approve: "Aprobar", reject: "Rechazar", commentPh: "Comentario (opcional)",
+        refresh: "Actualizar", termLabel: "Log de conexiones en vivo", clear: "Limpiar",
+        noCases: "Sin casos — ejecuta una consulta demo abajo o Start Job en Maestro.",
+        scenariosH: "Consultas demo (clientes reales distintos)",
+        scenariosSub: "Cada botón crea un caso nuevo con otro cliente/cotización MongoDB — no siempre UArtes.",
+        scenarioRun: "Ejecutar consulta",
+        actionCenter: "Action Center (HITL UiPath)",
+        consultation: "Consulta",
+        connErr: "No se conecta a la API. Con ngrok, pulsa “Visit Site” en la advertencia y actualiza.",
+        langBtn: "EN",
+      },
+    };
+
+    let lang = localStorage.getItem("pcd-lang") || "en";
+    let selectedCase = null;
+    let uiConfig = null;
+    let pollTimer = null;
+    const seenActivity = new Set();
+
+    function t(k) { return (I18N[lang] || I18N.en)[k] || k; }
+
+    function apiBase() {
+      const path = window.location.pathname;
+      const i = path.indexOf("/dashboard");
+      if (i > 0) return path.slice(0, i);
+      if (path.startsWith("/uipath-copilot")) return "/uipath-copilot";
+      if (path.startsWith("/uipath")) return "/uipath";
+      return "";
+    }
+
+    function termLog(level, source, msg) {
+      const el = document.getElementById("terminal");
+      const cls = level === "err" ? "line-err" : level === "ok" ? "line-ok" : level === "warn" ? "line-warn" : "line-info";
+      const ts = new Date().toISOString().slice(11, 19);
+      el.innerHTML += `<div class="${cls}">[${ts}] <b>${source}</b> ${msg}</div>`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    async function apiFetch(path, opts = {}) {
+      const url = apiBase() + path;
+      const method = (opts.method || "GET").toUpperCase();
+      termLog("info", "HTTP", `${method} ${url}`);
+      try {
+        const r = await fetch(url, {
+          ...opts,
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+            Accept: "application/json",
+            ...(opts.headers || {}),
+          },
+        });
+        const ct = r.headers.get("content-type") || "";
+        if (!r.ok) {
+          termLog("err", "HTTP", `${r.status} ${url}`);
+          throw new Error(`HTTP ${r.status}`);
+        }
+        if (ct.includes("json")) {
+          const j = await r.json();
+          termLog("ok", "HTTP", `${r.status} JSON ${path}`);
+          return j;
+        }
+        const text = await r.text();
+        termLog("ok", "HTTP", `${r.status} ${path} (${text.length}b)`);
+        return text;
+      } catch (e) {
+        termLog("err", "NET", String(e.message || e));
+        throw e;
+      }
+    }
+
+    function applyLang() {
+      document.documentElement.lang = lang;
+      document.getElementById("t-title").textContent = t("title");
+      document.getElementById("intro").innerHTML = `<strong>${t("introTitle")}</strong>` + t("introHtml");
+      document.getElementById("t-cases-h").textContent = t("casesH");
+      document.getElementById("th-client").textContent = t("client");
+      document.getElementById("th-scenario").textContent = t("consultation");
+      document.getElementById("th-incident").textContent = t("incident");
+      document.getElementById("th-stage").textContent = t("stage");
+      document.getElementById("th-stages").textContent = t("progress");
+      document.getElementById("th-hitl").textContent = t("hitl");
+      document.getElementById("th-appr").textContent = t("appr");
+      document.getElementById("t-detail-h").textContent = t("detailH");
+      document.getElementById("detail-empty").textContent = t("detailEmpty");
+      document.getElementById("btn-approve").textContent = t("approve");
+      document.getElementById("btn-reject").textContent = t("reject");
+      document.getElementById("m-comment").placeholder = t("commentPh");
+      document.getElementById("btn-refresh").textContent = t("refresh");
+      document.getElementById("t-term-label").textContent = t("termLabel");
+      document.getElementById("btn-clear-term").textContent = t("clear");
+      document.getElementById("btn-lang").textContent = t("langBtn");
+      document.getElementById("t-scenarios-h").textContent = t("scenariosH");
+      document.getElementById("t-scenarios-sub").textContent = t("scenariosSub");
+    }
+
+    function scenarioTitle(sc) {
+      return lang === "es" ? (sc.title_es || sc.title_en) : (sc.title_en || sc.title_es);
+    }
+
+    function renderScenarios(scenarios) {
+      const grid = document.getElementById("scenario-grid");
+      if (!scenarios.length) {
+        grid.innerHTML = `<span class="sub">—</span>`;
+        return;
+      }
+      grid.innerHTML = scenarios.map(sc => `
+        <button type="button" class="scenario-btn" data-id="${esc(sc.id)}">
+          <strong>${esc(scenarioTitle(sc))}</strong>
+          <span>${esc(sc.client_name || "")} · ${esc(sc.incident_type || "")}</span>
+        </button>`).join("");
+      grid.querySelectorAll(".scenario-btn").forEach(btn => {
+        btn.onclick = () => triggerScenario(btn.dataset.id);
+      });
+    }
+
+    async function triggerScenario(id) {
+      termLog("info", "DEMO", `Trigger ${id}…`);
+      try {
+        const r = await apiFetch(`/api/v1/demo/trigger/${id}`, { method: "POST" });
+        termLog("ok", "DEMO", `Case ${r.case_id?.slice(0, 8)}… · ${r.client_name || r.record?.client_name || id}`);
+        await load();
+        if (r.case_id) await openCase(r.case_id);
+      } catch (e) {
+        showError(String(e.message || e));
+      }
+    }
+
+    function showError(msg) {
+      const b = document.getElementById("err-banner");
+      b.textContent = msg;
+      b.classList.add("show");
+    }
+    function hideError() {
+      document.getElementById("err-banner").classList.remove("show");
+    }
+
+    function renderStatus(st, score) {
+      const m = st.uipath_maestro || {};
+      const mongo = st.mongodb || {};
+      const items = [
+        ["UiPath Maestro OAuth", m.reachable ? "Connected" : "Error", m.reachable ? "ok" : "bad"],
+        ["MongoDB pcdoctor_swarm", mongo.ok ? `${mongo.clients} clients · ${mongo.quotes} quotes` : "Error", mongo.ok ? "ok" : "bad"],
+        ["Ollama (local LLM)", st.ollama?.ok ? "Online :11434" : "Offline", st.ollama?.ok ? "ok" : "warn"],
+        ["WhatsApp Evolution", st.evolution_whatsapp?.ok ? "Ready" : "Off", st.evolution_whatsapp?.ok ? "ok" : "warn"],
+        ["Platform bonus", score ? `${score.score_pct}% (${score.bonuses_met}/${score.bonuses_total})` : "—", score && score.score_pct >= 50 ? "ok" : "warn"],
+      ];
+      document.getElementById("status-grid").innerHTML = items.map(([title, val, cls]) =>
+        `<div class="card"><h3>${title}</h3><span class="pill ${cls}">${val}</span></div>`
+      ).join("");
+    }
+
+    function renderCases(cases) {
+      const tbody = document.getElementById("cases-body");
+      if (!cases.length) {
+        tbody.innerHTML = `<tr><td colspan="7">${t("noCases")}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = cases.map(c => {
+        const hitl = c.needs_human ? `<span class="pill bad">${t("pending")}</span>` : `<span class="pill ok">${t("no")}</span>`;
+        const appr = c.approval_status ? `<span class="pill ${c.approval_status === "approved" ? "ok" : "bad"}">${c.approval_status}</span>` : "—";
+        const prog = (c.stages_completed || [c.stage]).join(" → ");
+        const sel = selectedCase && selectedCase.case_id === c.case_id ? "sel" : "";
+        const consult = lang === "es" ? (c.scenario_title_es || c.scenario_id || "—") : (c.scenario_title_en || c.scenario_id || "—");
+        return `<tr class="${sel}" data-id="${c.case_id}">
+          <td>${esc(c.client_name || "—")}</td>
+          <td style="font-size:.72rem">${esc(consult)}</td>
+          <td>${esc(c.incident_type || "—")}</td>
+          <td>${esc(c.stage || "—")}</td>
+          <td style="font-size:.7rem">${esc(prog)}</td>
+          <td>${hitl}</td>
+          <td>${appr}</td></tr>`;
+      }).join("");
+      tbody.querySelectorAll("tr[data-id]").forEach(tr => {
+        tr.onclick = () => openCase(tr.dataset.id);
+      });
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+    }
+
+    async function openCase(id) {
+      const c = await apiFetch(`/api/v1/cases/${id}`);
+      selectedCase = c;
+      document.getElementById("detail-empty").style.display = "none";
+      document.getElementById("detail-content").style.display = "block";
+      const done = new Set(c.stages_completed || [c.stage]);
+      document.getElementById("m-stages").innerHTML = STAGES.map(s => {
+        const cls = (done.has(s) ? "stage done" : "stage") + (c.stage === s ? " current" : "");
+        return `<span class="${cls}">${s}</span>`;
+      }).join("");
+      document.getElementById("m-meta").innerHTML = `<p style="font-size:.78rem;color:var(--muted)"><code>${c.case_id}</code><br/>Severity: ${c.severity || "—"}</p>`;
+      document.getElementById("m-findings").innerHTML = (c.findings || []).map(f =>
+        `<span class="finding"><span class="pill ${f.passed ? "ok" : "bad"}">${f.passed ? "OK" : "BLOCK"}</span> ${esc(f.gate)}: ${esc(f.message || "")}</span>`
+      ).join("");
+      document.getElementById("m-report").textContent = c.report_markdown || c.analysis || "—";
+      await loadCasesOnly();
+    }
+
+    async function decide(decision) {
+      if (!selectedCase) return;
+      const comment = document.getElementById("m-comment").value || "";
+      await apiFetch(`/api/v1/cases/${selectedCase.case_id}/human-decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, comment }),
+      });
+      termLog("ok", "HITL", `${decision} case ${selectedCase.case_id.slice(0, 8)}…`);
+      await load();
+    }
+
+    async function loadCasesOnly() {
+      const cases = await apiFetch("/api/v1/cases?limit=50");
+      renderCases(cases.cases || []);
+    }
+
+    async function load() {
+      hideError();
+      try {
+        const [st, cases, score, cfg, scen] = await Promise.all([
+          apiFetch("/status"),
+          apiFetch("/api/v1/cases?limit=50"),
+          apiFetch("/api/v1/platform-scorecard").catch(() => null),
+          apiFetch("/api/v1/ui-config").catch(() => null),
+          apiFetch("/api/v1/demo/scenarios").catch(() => ({ scenarios: [] })),
+        ]);
+        uiConfig = cfg;
+        renderScenarios(scen.scenarios || []);
+        renderStatus(st, score);
+        renderCases(cases.cases || []);
+        const base = uiConfig?.public_base_url || st.public_base_url || "";
+        const acUrl = uiConfig?.action_center?.action_center_url || "";
+        document.getElementById("action-center-link").innerHTML = acUrl
+          ? `${t("actionCenter")}: <a href="${esc(acUrl)}" target="_blank" rel="noopener">${esc(acUrl)}</a> · <a href="https://www.innerchispa.us" target="_blank">innerchispa.us</a>`
+          : `<a href="https://www.innerchispa.us" target="_blank">innerchispa.us</a>`;
+        document.getElementById("links").innerHTML = `
+          Webhook: <code>${esc(uiConfig?.webhook_url || base + "/api/v1/uipath-webhook")}</code><br/>
+          Public: <a href="${esc(base)}/dashboard" target="_blank">${esc(base)}/dashboard</a> ·
+          Company: <a href="https://www.innerchispa.us" target="_blank">innerchispa.us</a>`;
+        termLog("ok", "SYNC", `Loaded ${cases.count || 0} cases · API base="${apiBase() || "/"}"`);
+      } catch (e) {
+        showError(t("connErr"));
+      }
+    }
+
+    async function pollActivity() {
+      try {
+        const data = await apiFetch("/api/v1/activity?limit=40");
+        (data.lines || []).forEach(line => {
+          const key = `${line.ts}|${line.source}|${line.message}`;
+          if (seenActivity.has(key)) return;
+          seenActivity.add(key);
+          if (seenActivity.size > 200) {
+            seenActivity.clear();
+          }
+          const lvl = line.level === "err" ? "err" : line.level === "ok" ? "ok" : line.level === "warn" ? "warn" : "info";
+          termLog(lvl, line.source, line.message);
+        });
+      } catch (_) { /* silent on poll */ }
+    }
+
+    document.getElementById("btn-refresh").onclick = load;
+    document.getElementById("btn-approve").onclick = () => decide("approve");
+    document.getElementById("btn-reject").onclick = () => decide("reject");
+    document.getElementById("btn-clear-term").onclick = () => { document.getElementById("terminal").innerHTML = ""; };
+    document.getElementById("btn-lang").onclick = () => {
+      lang = lang === "en" ? "es" : "en";
+      localStorage.setItem("pcd-lang", lang);
+      applyLang();
+      load();
+    };
+
+    applyLang();
+    termLog("info", "SYS", `Dashboard boot · API base="${apiBase() || "/"}" · ${window.location.href}`);
+    load();
+    pollTimer = setInterval(pollActivity, 3000);
+  </script>
+</body>
+</html>
