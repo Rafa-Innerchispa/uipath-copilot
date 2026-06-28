@@ -6,9 +6,9 @@ import asyncio
 import json
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from tools.evolution_api import evolution_available, send_whatsapp
 from tools.mongo import get_db
@@ -17,7 +17,12 @@ from uipath_copilot.activity_log import list_activity, log_activity
 from uipath_copilot.case_store import get_case, list_cases
 from uipath_copilot.maestro_client import maestro_status
 from uipath_copilot.platform_scorecard import build_platform_scorecard
-from uipath_copilot.demo_scenarios import build_scenario_catalog, build_webhook_payload
+from uipath_copilot.i18n import normalize_lang
+from uipath_copilot.operational_consultations import (
+    build_consultation_catalog,
+    build_webhook_payload,
+    run_full_consultation,
+)
 from uipath_copilot.processor import apply_human_decision, process_webhook
 from uipath_copilot.project_docs_store import get_doc as get_project_doc
 from uipath_copilot.project_docs_store import list_docs as list_project_docs
@@ -46,6 +51,7 @@ class WebhookPayload(BaseModel):
     scenario_id: str | None = None
     scenario_title_en: str | None = None
     scenario_title_es: str | None = None
+    panel_lang: str | None = None
 
 
 def _notify_operator(report_md: str, case_id: str) -> dict[str, Any] | None:
@@ -72,7 +78,7 @@ def api_ui_config():
         "public_base_url": PUBLIC_BASE_URL,
         "webhook_url": f"{PUBLIC_BASE_URL}/api/v1/uipath-webhook",
         "action_center": ac,
-        "demo_scenarios_url": f"{PUBLIC_BASE_URL}/api/v1/demo/scenarios",
+        "consultations_url": f"{PUBLIC_BASE_URL}/api/v1/consultations",
         "dashboard_urls": {
             "local": f"http://192.168.1.4:{UIPATH_COPILOT_PORT}/dashboard",
             "public": f"{PUBLIC_BASE_URL}/dashboard",
@@ -124,7 +130,41 @@ def api_human_decision(case_id: str, body: HumanDecisionPayload):
 
 
 @router.post("/uipath-webhook")
-async def uipath_webhook(body: WebhookPayload, background_tasks: BackgroundTasks):
+async def uipath_webhook(request: Request, background_tasks: BackgroundTasks):
+    """
+    Entrada Maestro API Workflow.
+    Acepta JSON en body O query ?case_id=&stage= (si Maestro manda body vacío).
+    """
+    qp = dict(request.query_params)
+    raw = await request.body()
+    payload: dict[str, Any] = {}
+
+    if raw and raw.strip() not in (b"", b"{}", b"null"):
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                422,
+                f"JSON body invalid: {exc}. Paste JSON from data/maestro_webhook_body_*.json or use ?case_id=&stage= in URL.",
+            ) from exc
+        if isinstance(parsed, dict):
+            payload = parsed
+
+    for key, val in qp.items():
+        if key not in payload or payload[key] in (None, ""):
+            payload[key] = val
+
+    if not payload.get("case_id") and payload.get("CaseId"):
+        payload["case_id"] = payload["CaseId"]
+
+    try:
+        body = WebhookPayload.model_validate(payload)
+    except ValidationError as exc:
+        raise HTTPException(
+            422,
+            f"Missing fields: {exc.errors()}. Required: case_id (body or ?case_id=). stage defaults to Intake.",
+        ) from exc
+
     try:
         result = process_webhook(body.model_dump())
     except ValueError as exc:
@@ -184,52 +224,57 @@ def api_platform_scorecard():
     return build_platform_scorecard()
 
 
-@router.get("/demo/scenarios")
-def demo_scenarios():
-    """Catálogo de consultas demo — clientes/cotizaciones distintos en MongoDB."""
-    catalog = build_scenario_catalog()
+@router.get("/consultations")
+def list_consultations():
+    """Catálogo de consultas operativas — clientes/cotizaciones reales en MongoDB."""
+    catalog = build_consultation_catalog()
     return {
         "webhook_url": f"{PUBLIC_BASE_URL}/api/v1/uipath-webhook",
         "count": len(catalog),
-        "scenarios": catalog,
-        "trigger_url_pattern": f"{PUBLIC_BASE_URL}/api/v1/demo/trigger/{{scenario_id}}",
+        "consultations": catalog,
+        "run_full_url_pattern": f"{PUBLIC_BASE_URL}/api/v1/consultations/{{consultation_id}}/run-full",
     }
 
 
-@router.get("/demo/trigger/{scenario_id}")
-@router.post("/demo/trigger/{scenario_id}")
-def demo_trigger_scenario(scenario_id: str, stage: str = "Intake"):
-    """Dispara una consulta demo concreta (cliente real distinto)."""
+@router.post("/consultations/{consultation_id}/run-full")
+def run_consultation_full(consultation_id: str, lang: str = Query("es")):
+    """Ejecuta etapas Maestro; se detiene si gate bloqueante falla."""
     try:
-        payload = build_webhook_payload(scenario_id, stage=stage)
+        return run_full_consultation(consultation_id, panel_lang=normalize_lang(lang))
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
-    log_activity("info", "DEMO", f"Trigger scenario {scenario_id} · {payload.get('client_name')}")
+
+
+@router.get("/consultations/{consultation_id}/run")
+@router.post("/consultations/{consultation_id}/run")
+def run_consultation_stage(consultation_id: str, stage: str = "Intake", lang: str = Query("es")):
+    """Ejecuta una sola etapa de la consulta operativa."""
+    try:
+        payload = build_webhook_payload(consultation_id, stage=stage, panel_lang=normalize_lang(lang))
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    log_activity("info", "CONSULTA", f"{stage} · {payload.get('client_name')} · {consultation_id}")
     return process_webhook(payload)
+
+
+# Alias legacy (scripts antiguos) — sin exponer en UI
+@router.get("/demo/scenarios")
+def _legacy_demo_scenarios():
+    c = build_consultation_catalog()
+    return {"scenarios": c, "consultations": c, "count": len(c)}
+
+
+@router.post("/demo/trigger/{scenario_id}")
+def _legacy_demo_trigger(scenario_id: str, stage: str = "Intake"):
+    return run_consultation_stage(scenario_id, stage=stage)
 
 
 @router.get("/demo/trigger-sample")
-def demo_trigger_sample(scenario_id: str | None = None):
-    """
-    Dispara demo — si ?scenario_id= la_pradera_quote_pdf usa catálogo;
-    si no, rota entre escenarios para no repetir siempre el mismo cliente.
-    """
+def _legacy_trigger_sample(consultation_id: str | None = None):
     import uuid
 
-    catalog = build_scenario_catalog()
+    catalog = build_consultation_catalog()
     if not catalog:
-        raise HTTPException(503, "MongoDB sin datos demo")
-
-    if scenario_id:
-        sid = scenario_id
-    else:
-        # Rotar: elige escenario cuyo id hash evita siempre el primero del listado
-        idx = uuid.uuid4().int % len(catalog)
-        sid = catalog[idx]["id"]
-
-    try:
-        payload = build_webhook_payload(sid)
-    except ValueError as exc:
-        raise HTTPException(404, str(exc)) from exc
-    log_activity("info", "DEMO", f"trigger-sample → {sid}")
-    return process_webhook(payload)
+        raise HTTPException(503, "MongoDB sin datos operativos")
+    cid = consultation_id or catalog[uuid.uuid4().int % len(catalog)]["id"]
+    return run_consultation_stage(cid, stage="Intake")

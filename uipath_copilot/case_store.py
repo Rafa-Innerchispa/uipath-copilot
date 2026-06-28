@@ -37,16 +37,20 @@ def save_case(doc: dict[str, Any]) -> dict[str, Any]:
     existing = col.find_one({"case_id": case_id}, {"_id": 0})
     if existing:
         doc["created_at"] = existing.get("created_at", _now())
-        if "events" not in doc:
-            doc["events"] = existing.get("events", [])
     else:
         doc["created_at"] = _now()
+    # Nunca pisar eventos con copia stale del documento anterior
+    doc.pop("events", None)
+    if existing and existing.get("events"):
+        doc["events"] = existing.get("events", [])
+    else:
         doc.setdefault("events", [])
     doc["updated_at"] = _now()
     if not doc.get("client_name") and doc.get("payload_snapshot"):
         doc["client_name"] = doc["payload_snapshot"].get("client_name")
     col.update_one({"case_id": case_id}, {"$set": doc}, upsert=True)
-    return col.find_one({"case_id": case_id}, {"_id": 0}) or doc
+    saved = col.find_one({"case_id": case_id}, {"_id": 0}) or doc
+    return _serialize_case(saved)
 
 
 def append_event(case_id: str, event: dict[str, Any]) -> None:
@@ -61,10 +65,20 @@ def append_event(case_id: str, event: dict[str, Any]) -> None:
 
 
 def get_case(case_id: str) -> dict[str, Any] | None:
-    return _db()[CASES_COLLECTION].find_one({"case_id": case_id}, {"_id": 0})
+    doc = _db()[CASES_COLLECTION].find_one({"case_id": case_id}, {"_id": 0})
+    return _serialize_case(doc) if doc else None
+
+
+def _serialize_case(doc: dict[str, Any]) -> dict[str, Any]:
+    out = dict(doc)
+    for key in ("created_at", "updated_at"):
+        val = out.get(key)
+        if hasattr(val, "isoformat"):
+            out[key] = val.isoformat()
+    return out
 
 
 def list_cases(limit: int = 50) -> list[dict[str, Any]]:
     ensure_case_indexes()
     cur = _db()[CASES_COLLECTION].find({}, {"_id": 0}).sort("updated_at", -1).limit(limit)
-    return list(cur)
+    return [_serialize_case(c) for c in cur]

@@ -78,8 +78,8 @@ def status():
             "cases": "GET /api/v1/cases",
             "dashboard_jurado": "GET /dashboard",
             "project_docs": "GET /api/v1/project-docs",
-            "demo_real": "GET /api/v1/demo/trigger-sample",
-            "demo_scenarios": "GET /api/v1/demo/scenarios",
+            "consultations": "GET /api/v1/consultations",
+            "run_full": "POST /api/v1/consultations/{id}/run-full",
             "platform_scorecard": "GET /api/v1/platform-scorecard",
         },
     }

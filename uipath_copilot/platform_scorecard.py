@@ -86,7 +86,7 @@ def build_platform_scorecard() -> dict[str, Any]:
             "name": "Admin Refine :5173/maestro",
             "met": True,
             "evidence": "Proxy /uipath-copilot",
-            "points": "Demo visual",
+            "points": "Panel operativo",
         },
         {
             "id": "agent_builder",

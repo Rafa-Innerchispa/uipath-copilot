@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from datetime import datetime, timezone
 
 from tools.gates import (
     check_duplicate_client,
@@ -19,7 +19,17 @@ from uipath_copilot.case_store import append_event, get_case, save_case
 from uipath_copilot.maestro_client import maestro_handoff_note
 from uipath_copilot.settings import OLLAMA_MODEL_ANALYSIS, OLLAMA_MODEL_CODER
 
+from uipath_copilot.i18n import normalize_lang, t as i18n_t
+
 STAGES = ("Intake", "Investigation", "Remediation", "Approval")
+
+
+def has_blocking_gate(findings: list[dict]) -> dict | None:
+    """Primer gate bloqueante/alta que impide avanzar."""
+    for f in findings:
+        if not f.get("passed") and f.get("severity") in ("bloqueante", "alta"):
+            return f
+    return None
 
 
 def _load_recent_quote() -> dict[str, Any] | None:
@@ -38,17 +48,11 @@ def _load_recent_report_export() -> str | None:
     return None
 
 
-def _analyze_with_ollama(context: str, *, coder: bool = False) -> str:
+def _analyze_with_ollama(context: str, *, lang: str = "es", coder: bool = False) -> str:
     model = OLLAMA_MODEL_CODER if coder else OLLAMA_MODEL_ANALYSIS
     return ollama_chat(
         [
-            {
-                "role": "system",
-                "content": (
-                    "Eres copiloto operativo PC Doctor S.A. Responde en español, "
-                    "Markdown limpio, acciones concretas. Sin placeholders inventados."
-                ),
-            },
+            {"role": "system", "content": i18n_t(lang, "ollama_system")},
             {"role": "user", "content": context},
         ],
         model=model,
@@ -72,23 +76,34 @@ def _detect_incident(payload: dict[str, Any]) -> str:
     return "field_inspection_exception"
 
 
-def _build_report_markdown(case_id: str, incident: str, findings: list[dict], analysis: str, stage: str) -> str:
+def _build_stage_report(
+    case_id: str, incident: str, findings: list[dict], analysis: str, stage: str, *, lang: str = "es"
+) -> str:
+    ok_l = i18n_t(lang, "gate_ok")
+    block_l = i18n_t(lang, "gate_block")
     lines = [
-        f"# Caso Maestro — PC Doctor ({stage})",
+        i18n_t(lang, "report_stage", stage=stage),
         "",
         f"- **case_id:** `{case_id}`",
         f"- **incident_type:** `{incident}`",
-        f"- **etapa:** `{stage}`",
         "",
-        "## Hallazgos (datos reales)",
+        i18n_t(lang, "report_findings"),
         "",
     ]
     for f in findings:
         gate = f.get("gate", "check")
-        status = "OK" if f.get("passed") else "BLOQUEO"
+        status = ok_l if f.get("passed") else block_l
         lines.append(f"- [{status}] **{gate}**: {f.get('message', '')}")
-    lines.extend(["", f"## Análisis copiloto — {stage}", "", analysis.strip(), ""])
+    lines.extend(["", i18n_t(lang, "report_analysis", stage=stage), "", analysis.strip(), ""])
     return "\n".join(lines)
+
+
+def _merge_report(prior: dict[str, Any], case_id: str, incident: str, findings: list[dict], analysis: str, stage: str) -> str:
+    stage_reports: dict[str, str] = dict(prior.get("stage_reports") or {})
+    stage_reports[stage] = _build_stage_report(case_id, incident, findings, analysis, stage)
+    header = prior.get("report_header") or f"# Caso Maestro — PC Doctor\n\n- **Cliente:** {prior.get('client_name') or '—'}\n"
+    body = "\n\n---\n\n".join(stage_reports[s] for s in STAGES if s in stage_reports)
+    return f"{header.strip()}\n\n---\n\n{body}" if body else header
 
 
 def _run_real_checks(incident: str, payload: dict[str, Any]) -> list[dict]:
@@ -161,7 +176,9 @@ def _run_real_checks(incident: str, payload: dict[str, Any]) -> list[dict]:
                 )
 
     if incident == "report_quality":
-        sample = _load_recent_report_export() or (payload.get("raw_logs") or "")
+        sample = (payload.get("raw_logs") or "").strip()
+        if not sample:
+            sample = _load_recent_report_export() or ""
         findings.append(check_placeholders(sample, field="informe"))
 
     client_count = db.clients.count_documents({})
@@ -211,17 +228,17 @@ def _enrich_investigation(payload: dict[str, Any], findings: list[dict]) -> list
     return findings
 
 
-def _stage_analysis(stage: str, context: str, *, coder: bool = False) -> str:
+def _stage_analysis(stage: str, context: str, *, lang: str = "es", coder: bool = False) -> str:
     prompts = {
-        "Intake": "Clasifica y resume el incidente operativo PC Doctor:",
-        "Investigation": "Investiga a fondo con los datos MongoDB. Lista causas probables y evidencia:",
-        "Remediation": "Propón remediación concreta (cotización, informe, cliente, hub). Pasos numerados:",
-        "Approval": "Resume para Rafael qué debe aprobar o rechazar (1 párrafo):",
+        "Intake": i18n_t(lang, "prompt_intake"),
+        "Investigation": i18n_t(lang, "prompt_investigation"),
+        "Remediation": i18n_t(lang, "prompt_remediation"),
+        "Approval": i18n_t(lang, "prompt_approval"),
     }
     prefix = prompts.get(stage, prompts["Intake"])
     if not ollama_available():
-        return "Ollama no disponible en :11434 — gates MongoDB ejecutados igualmente."
-    return _analyze_with_ollama(f"{prefix}\n\n{context}", coder=coder or stage == "Remediation")
+        return i18n_t(lang, "ollama_offline")
+    return _analyze_with_ollama(f"{prefix}\n\n{context}", lang=lang, coder=coder or stage == "Remediation")
 
 
 def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
@@ -234,6 +251,7 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         stage = "Intake"
 
     severity = payload.get("severity") or "medium"
+    lang = normalize_lang(payload.get("panel_lang") or prior.get("panel_lang"))
     incident = _detect_incident(payload)
     prior = get_case(case_id) or {}
 
@@ -258,8 +276,17 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         ensure_ascii=False,
         indent=2,
     )
-    analysis = _stage_analysis(stage, context)
-    report_md = _build_report_markdown(case_id, incident, findings, analysis, stage)
+    analysis = _stage_analysis(stage, context, lang=lang)
+    client_name = payload.get("client_name") or prior.get("client_name")
+    report_header = prior.get("report_header") or (
+        f"{i18n_t(lang, 'report_title')}\n\n"
+        f"- {i18n_t(lang, 'report_client')} {client_name or '—'}\n"
+        f"- **case_id:** `{case_id}`\n"
+        f"- **incident_type:** `{incident}`"
+    )
+    stage_reports = dict(prior.get("stage_reports") or {})
+    stage_reports[stage] = _build_stage_report(case_id, incident, findings, analysis, stage, lang=lang)
+    report_md = _merge_report({**prior, "report_header": report_header, "client_name": client_name}, case_id, incident, findings, analysis, stage)
 
     maestro_handoff = maestro_handoff_note(stage, needs_human)
     action_center_result = None
@@ -290,9 +317,14 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
             "scenario_title_en": payload.get("scenario_title_en") or prior.get("scenario_title_en"),
             "scenario_title_es": payload.get("scenario_title_es") or prior.get("scenario_title_es"),
             "quote_id": payload.get("quote_id") or prior.get("quote_id"),
+            "panel_lang": lang,
+            "flow_blocked": bool(has_blocking_gate(findings)),
+            "blocking_gate": (has_blocking_gate(findings) or {}).get("gate"),
             "findings": findings,
             "analysis": analysis,
             "report_markdown": report_md,
+            "report_header": report_header,
+            "stage_reports": stage_reports,
             "maestro_handoff": maestro_handoff,
             "action_center_task": action_center_result,
             "payload_snapshot": payload,
@@ -311,13 +343,18 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         "scenario_id": payload.get("scenario_id"),
         "findings": findings,
         "report_markdown": report_md,
+        "flow_blocked": bool(has_blocking_gate(findings)),
+        "blocking_gate": (has_blocking_gate(findings) or {}).get("gate"),
+        "panel_lang": lang,
         "maestro_handoff": maestro_handoff,
         "action_center_task": action_center_result,
         "record": record,
         "message": (
-            f"Etapa {stage} procesada. Maestro avanza en cloud cuando la tarea API Workflow termina OK."
-            if stage != "Approval"
-            else "Etapa Approval: completa la User task en Action Center o aprueba en panel /dashboard."
+            i18n_t(lang, "msg_flow_complete")
+            if stage == "Approval"
+            else i18n_t(lang, "msg_flow_blocked", stage=stage)
+            if has_blocking_gate(findings)
+            else f"Stage {stage} processed."
         ),
     }
 
@@ -338,13 +375,46 @@ def apply_human_decision(case_id: str, *, decision: str, comment: str = "") -> d
         case_id,
         {"type": "human_decision", "decision": status, "comment": comment[:500]},
     )
+
+    fresh = get_case(case_id) or doc
+    lang = normalize_lang(fresh.get("panel_lang"))
+    stages_completed = list(dict.fromkeys((fresh.get("stages_completed") or []) + ["Approval"]))
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    label = i18n_t(lang, "approved_label" if approved else "rejected_label")
+    no_comment = "(no comment)" if lang == "en" else "(sin comentario)"
+    approval_block = (
+        f"\n\n---\n\n## ✅ {i18n_t(lang, 'approval_section', label=label, status=status, stamp=stamp, comment=comment.strip() or no_comment)}"
+    )
+    report_md = (fresh.get("report_markdown") or "") + approval_block
+
     record = save_case(
         {
-            **doc,
+            "case_id": case_id,
             "approval_status": status,
             "needs_human": False,
             "human_comment": comment[:500],
             "stage": "Approval",
+            "stages_completed": stages_completed,
+            "report_markdown": report_md,
+            "client_name": fresh.get("client_name"),
+            "scenario_id": fresh.get("scenario_id"),
+            "scenario_title_en": fresh.get("scenario_title_en"),
+            "scenario_title_es": fresh.get("scenario_title_es"),
+            "incident_type": fresh.get("incident_type"),
+            "severity": fresh.get("severity"),
+            "findings": fresh.get("findings"),
+            "stage_reports": fresh.get("stage_reports"),
+            "report_header": fresh.get("report_header"),
         }
+    )
+    log_activity(
+        "ok" if approved else "warn",
+        "APROBACIÓN" if lang == "es" else "APPROVAL",
+        i18n_t(
+            lang,
+            "approval_done" if approved else "approval_reject",
+            client=fresh.get("client_name") or "—",
+            case_id=case_id[:8],
+        ),
     )
     return {"ok": True, "case_id": case_id, "approval_status": status, "record": record}
