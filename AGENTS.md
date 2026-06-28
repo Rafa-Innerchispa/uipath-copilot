@@ -6,6 +6,7 @@
 
 ## Lee esto PRIMERO
 
+0. [`docs/PROYECTO_MAESTRO_COMPLETO.md`](docs/PROYECTO_MAESTRO_COMPLETO.md) — **documento maestro** (estado + config + pendientes)
 1. [`docs/HACKATHON_REQUIREMENTS.md`](docs/HACKATHON_REQUIREMENTS.md) — checklist jurado + entregables
 2. [`docs/UIPATH_MAESTRO_BLUEPRINT.md`](docs/UIPATH_MAESTRO_BLUEPRINT.md) — arquitectura webhook + Maestro
 3. [`docs/hackathon_resources/INDEX.md`](docs/hackathon_resources/INDEX.md) — mirror local de recursos Devpost (generar con scraper)

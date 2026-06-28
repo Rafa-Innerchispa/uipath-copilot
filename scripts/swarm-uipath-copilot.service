@@ -1,0 +1,18 @@
+[Unit]
+Description=UiPath Maestro Case Copilot PC Doctor :8097
+After=network-online.target mongod.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rlopez
+Group=rlopez
+WorkingDirectory=/home/rlopez/projects/uipath-copilot
+EnvironmentFile=-/home/rlopez/projects/uipath-copilot/.env
+Environment=UIPATH_CLIENT_SECRET_FILE=/home/rlopez/projects/uipath-copilot/.uipath_secret
+ExecStart=/usr/bin/bash /home/rlopez/projects/uipath-copilot/run_uipath_copilot.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

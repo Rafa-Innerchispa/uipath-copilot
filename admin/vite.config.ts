@@ -6,6 +6,11 @@ const apiProxy = {
   "/inspection": { target: "http://127.0.0.1:8100", changeOrigin: true },
   "/docs": { target: "http://127.0.0.1:8100", changeOrigin: true },
   "/status": { target: "http://127.0.0.1:8100", changeOrigin: true },
+  "/uipath-copilot": {
+    target: "http://127.0.0.1:8097",
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/uipath-copilot/, ""),
+  },
 };
 
 export default defineConfig({

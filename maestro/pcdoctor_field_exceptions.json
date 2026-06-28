@@ -1,0 +1,141 @@
+{
+    "id": "case-q4STjLy0fo",
+    "name": "PCDoctorFieldExceptions",
+    "version": "20.0.0",
+    "bindings": [],
+    "variables": {
+        "inputOutputs": []
+    },
+    "metadata": {
+        "caseIdentifier": "PCD",
+        "caseAppEnabled": true,
+        "caseIdentifierType": "constant",
+        "publishVersion": 2
+    },
+    "nodes": [
+        {
+            "id": "Stage_RyaHk4",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 1600,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Approval",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": []
+            }
+        },
+        {
+            "id": "Stage_iXLQN7",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 1100,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Remediation",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": []
+            }
+        },
+        {
+            "id": "Stage_3HWPcC",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 600,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Investigation",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": []
+            }
+        },
+        {
+            "id": "Stage_ZTGzqY",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Intake",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": []
+            }
+        },
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "Trigger 1"
+            }
+        }
+    ],
+    "edges": []
+}

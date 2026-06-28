@@ -16,6 +16,7 @@ import {
   FileSearchOutlined,
   MailOutlined,
   DeploymentUnitOutlined,
+  CloudServerOutlined,
 } from "@ant-design/icons";
 import { HackathonPage } from "./pages/hackathon";
 import { AppLayout } from "./components/AppLayout";
@@ -29,12 +30,14 @@ import { DataCenterPage } from "./pages/datacenter";
 import { VisitList } from "./pages/visits/list";
 import { ReportList } from "./pages/reports/list";
 import { EmailMonitorPage } from "./pages/email";
+import { MaestroCasesPage } from "./pages/maestro";
 
 function AppRoutes() {
   const { labels } = useLang();
   const resources: ResourceProps[] = useMemo(
     () => [
       { name: "inneros", list: "/inneros", meta: { label: labels.inneros, icon: <DeploymentUnitOutlined /> } },
+      { name: "maestro", list: "/maestro", meta: { label: labels.maestro, icon: <CloudServerOutlined /> } },
       { name: "datacenter", list: "/datacenter", meta: { label: labels.datacenter, icon: <CommentOutlined /> } },
       { name: "clients", list: "/clients", meta: { label: labels.clients, icon: <TeamOutlined /> } },
       { name: "inventory-items", list: "/inventory", meta: { label: labels.inventory, icon: <ShoppingOutlined /> } },
@@ -78,6 +81,7 @@ function AppRoutes() {
             <Route element={<AppLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="/inneros" element={<HackathonPage />} />
+              <Route path="/maestro" element={<MaestroCasesPage />} />
               <Route path="/datacenter" element={<DataCenterPage />} />
               <Route path="/clients" element={<ClientList />} />
               <Route path="/inventory" element={<ResourceList resource="inventory-items" />} />

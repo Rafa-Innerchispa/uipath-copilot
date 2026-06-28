@@ -13,6 +13,8 @@ from tools.ollama_chat import ollama_available
 from uipath_copilot.case_store import get_case, list_cases
 from uipath_copilot.maestro_client import maestro_status
 from uipath_copilot.processor import process_webhook
+from uipath_copilot.project_docs_store import get_doc as get_project_doc
+from uipath_copilot.project_docs_store import list_docs as list_project_docs
 from uipath_copilot.settings import (
     OPERATOR_WHATSAPP,
     PUBLIC_BASE_URL,
@@ -58,6 +60,21 @@ async def uipath_webhook(body: WebhookPayload, background_tasks: BackgroundTasks
             result["case_id"],
         )
     return result
+
+
+@router.get("/project-docs")
+def api_list_project_docs(limit: int = 30):
+    """Índice de documentación sincronizada (MongoDB inneros_global)."""
+    docs = list_project_docs(limit=limit)
+    return {"docs": docs, "count": len(docs)}
+
+
+@router.get("/project-docs/{doc_id}")
+def api_get_project_doc(doc_id: str):
+    doc = get_project_doc(doc_id)
+    if not doc:
+        raise HTTPException(404, "Documento no encontrado")
+    return doc
 
 
 @router.get("/cases")

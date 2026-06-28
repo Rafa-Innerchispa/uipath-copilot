@@ -1,0 +1,322 @@
+# Orchestrator - Automation Cloud™ Robots - VM
+
+- **URL:** https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-automation-cloud-robots-vm
+- **Content-Type:** text/html; charset=utf-8
+- **Scraped:** scripts/scrape_hackathon_resources.py
+## Contenido extraído
+
+Orchestrator - Automation Cloud™ Robots - VM
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+- search Search ​ Language translate English expand_more ​ Sign in orchestrator latest false Orchestrator Automation Cloud · latest - Collapse
+- Getting started
+- Introduction
+- Orchestrator feature availability
+- Licensing
+- Robots
+- Robot Statuses
+- Robot Settings
+- Auto Updating Client Components
+- Time-to-live Periods
+- Orchestrator outbound IP ranges
+- Autopilot Chat in Orchestrator
+- Notifications
+- Best practices
+- Organization Modeling in Orchestrator
+- Automation Best Practices
+- Optimizing Unattended Infrastructure Using Machine Templates
+- Unattended automation
+- Accessing the unattended robot setup
+- Useful concepts in unattended automation
+- How is unattended automation performed
+- Organizing Resources With Tags
+- Exporting grids in the background
+- Enforcing user-level Integration Service connection governance
+- Tenant
+- About the Tenant Context
+- Searching for Resources in a Tenant
+- Robots
+- Managing Robots
+- Connecting Robots to Orchestrator
+- Storing Robot Credentials in CyberArk
+- Storing Unattended Robot Passwords in Azure Key Vault (read only)
+- Storing Unattended Robot Credentials in HashiCorp Vault (read only)
+- Storing Unattended Robot Credentials in AWS Secrets Manager (read only)
+- Deleting Disconnected and Unresponsive Unattended Sessions
+- Robot Authentication
+- Robot Authentication With Client Credentials
+- Folders
+- Managing Folders
+- Organizing Folders
+- Personal Workspaces
+- Managing Personal Workspaces
+- Default Execution Identity
+- Configure the Default Execution Identity
+- Monitoring
+- Jobs
+- Unattended sessions
+- User sessions
+- License
+- API audit
+- Access control
+- Account types
+- Default roles
+- Migrating from break inheritance to union of privileges
+- Managing custom roles
+- Configuring access for accounts
+- Configuring automation capabilities
+- Machines
+- Managing Machines
+- Assigning Machine Objects to Folders
+- Configuring Account-machine Mappings
+- EDR Protection Status
+- Solutions
+- Packages
+- Managing Packages
+- About Libraries
+- Managing Libraries
+- Audit
+- Credential Stores
+- Integrating credential stores
+- Managing credential stores
+- The Orchestrator Credentials Proxy
+- Orchestrator Credentials Proxy debugging
+- Managing credential proxies
+- Webhooks
+- Types of Events
+- Managing Webhooks
+- Licensing
+- Managing Your Licenses
+- Settings
+- Registry
+- About the Registry context
+- Solution deployments
+- Processes
+- Resources
+- Cloud robots
+- Cloud robots overview
+- Unified Pricing licensing
+- Consuming platform units
+- Platform units calculation example
+- Platform units consumption of automatic VM pools
+- Flex licensing
+- Consuming Robot Units
+- Robot units calculation example
+- Robot Units consumption of automatic VM pools
+- Elastic Robot Orchestration
+- Requirements
+- Cloud provider setup
+- Setup in Orchestrator
+- Troubleshooting
+- Frequently asked questions
+- Automation Cloud™ Robots - VM
+- Running unattended automations using cloud robots - VM
+- Uploading your own image
+- Reusing customized machine images (for Manual pools)
+- Resetting credentials for a machine (for Manual pools)
+- Monitoring
+- Security updates
+- Asking for a trial
+- Frequently asked questions
+- Automation Cloud™ Robots - Serverless
+- Executing unattended automations with Serverless robots
+- Machine Sizes and Costs
+- Regenerating client secrets
+- Outbound IP ranges
+- Managing VPN settings
+- Asking for a trial
+- Frequently asked questions
+- Configuring VPN for cloud robots
+- Configuring an ExpressRoute connection
+- Live streaming and remote control
+- My notifications
+- Events
+- Viewing and accessing notifications
+- Viewing and accessing email notifications
+- Displaying only unread notifications
+- Marking all notifications as read
+- Clearing all notifications
+- Deleting notifications
+- Subscribing to events
+- Unsubscribing from events
+- Automation Suite Robots
+- About Automation Suite Robots
+- Executing Unattended Automations With Automation Suite Robots
+- Regenerating Client Secrets
+- Frequently Asked Questions
+- Folders Context
+- About the Folders Context
+- Home
+- Processes
+- About Processes
+- Managing Processes
+- Managing Package Requirements
+- Recording
+- Live streaming and remote control
+- Live streaming and remote control via RealVNC
+- Error scenarios
+- Live streaming and remote control via TightVNC
+- Error scenarios
+- Jobs
+- About Jobs
+- Managing Jobs
+- Job States
+- Working with long-running workflows
+- Running Personal Remote Automations
+- Process Data Retention Policy
+- Apps
+- About Apps
+- Publishing an App to a Tenant
+- Managing Apps
+- Running a Deployed App from a Folder
+- Triggers
+- About triggers
+- Time triggers
+- Queue triggers
+- Event triggers
+- API triggers
+- Call modes explained
+- Managing triggers
+- Creating a time trigger
+- Creating a queue trigger
+- Creating an event trigger
+- Managing API triggers
+- Trigger details
+- Managing Non-Working Days
+- Using Cron Expressions
+- Triggering jobs on the last day of the month
+- Logs
+- About Logs
+- Managing Logs in Orchestrator
+- Logging Levels
+- Monitoring
+- About Monitoring
+- Machines
+- Agents
+- Processes
+- Queues
+- Indexes
+- Queues SLA
+- Indexes
+- About indexes
+- Managing indexes
+- Queues
+- About Queues and Transactions
+- Queue Item Statuses
+- Business Exception Vs Application Exception
+- Studio Activities Used With Queues
+- Queue Item Retention Policy
+- Bulk uploading Queue Items using a CSV file
+- Managing Queues in Orchestrator
+- Managing Queues in Studio
+- Managing Transactions
+- Editing Transactions
+- Field Descriptions for the Transactions .csv File
+- Review Requests
+- Assets
+- About Assets
+- Managing Assets in Orchestrator
+- Managing Assets in Studio
+- Storing Assets in Azure Key Vault (read only)
+- Storing Assets in HashiCorp Vault (read only)
+- Storing Assets in AWS Secrets Manager (read only)
+- Storing Assets in Google Secret Manager (read only)
+- Connections
+- About Connections
+- Managing Connections
+- Business Rules
+- About Business Rules
+- Permissions for Business Rules
+- Managing Business Rules
+- Creating a business rule
+- Storage Buckets
+- About Storage Buckets
+- CORS/CSP Configuration
+- Managing Storage Buckets
+- MCP Servers
+- About MCP Servers
+- MCP Server types
+- MCP Server shared foundation
+- Getting the MCP Server URL
+- Using Orchestrator Assets in MCP Servers
+- Managing MCP Servers
+- Creating UiPath MCP Servers
+- Creating coded MCP Servers
+- Creating command MCP Servers
+- Creating a remote MCP Server
+- MCP Server authentication
+- Authenticating with the MCP OAuth flow
+- Authenticating with a personal access token
+- Authenticating with an external application
+- Authenticating with interactive login (CLI)
+- Ground-to-cloud authentication
+- Troubleshooting MCP Server authentication
+- MCP compliance guidelines
+- Orchestrator testing
+- FAQ - Deprecating the testing module
+- FAQ - Migrating test artifacts to Test Manager
+- FAQ - Feature parity - Test Manager vs Orchestrator
+- Test Automation
+- Test Cases
+- Field Descriptions for the Test Cases Page
+- Test Sets
+- Field Descriptions for the Test Sets Page
+- Test Executions
+- Field Descriptions for the Test Executions Page
+- Test Schedules
+- Field Descriptions for the Test Schedules Page
+- Test Data Queues
+- Managing Test Data Queues in Orchestrator
+- Managing Test Data Queues in Studio
+- Field Descriptions for the Test Data Queues Page
+- Test Data Queue Activities
+- Testing Data Retention Policy
+- Resource Catalog Service
+- About Resource Catalog Service
+- Integrations
+- About Input and Output Arguments
+- Example of Using Input and Output Arguments
+- Troubleshooting
+- About Troubleshooting
+- Alerts troubleshooting
+- General troubleshooting
+- Frequently Encountered Orchestrator Errors Home Open Dropdown to choose product Orchestrator ​ Automation Cloud latest Automation Cloud™ Robots - VM Orchestrator user guide
+
+ Automation Cloud™ Robots - VM
+
+ link Note: Feature availability depends on the cloud offering that you use. For details, refer to the Feature availability page .
+
+ UiPath Automation Cloud ™ robots - VM, or cloud robots - VM for short, make it easy to set up the necessary infrastructure to run automations.
+
+ We handle all the work behind the scenes and give you a virtual machine on which to run automations. The only thing you have to do is configure the virtual machine and run jobs.
+
+ Help improve this page Was this page helpful?
+
+ thumb_up Yes thumb_down No PREVIOUS Frequently asked questions NEXT Running unattended automations using cloud robots - VM Connect
+
+ Need help? Support
+
+ Want to learn? UiPath Academy
+
+ Have questions? UiPath Forum
+
+ Stay updated

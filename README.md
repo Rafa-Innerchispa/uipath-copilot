@@ -64,9 +64,14 @@ MONGO_DB=pcdoctor_swarm
 
 ## Documentación
 
+- **[`docs/PROYECTO_MAESTRO_COMPLETO.md`](docs/PROYECTO_MAESTRO_COMPLETO.md)** — estado completo del proyecto (documento maestro)
+- [`docs/COMMUNITY_LICENSE_ROADMAP.md`](docs/COMMUNITY_LICENSE_ROADMAP.md) — qué activar con licencia Community
 - [`docs/SUBMISION_JURADO.md`](docs/SUBMISION_JURADO.md) — guion video + Devpost
 - [`docs/HACKATHON_REQUIREMENTS.md`](docs/HACKATHON_REQUIREMENTS.md) — checklist jurado
+- [`docs/TU_CHECKLIST_3_CLICKS.md`](docs/TU_CHECKLIST_3_CLICKS.md) — acciones manuales UiPath
 - [`docs/hackathon_resources/INDEX.md`](docs/hackathon_resources/INDEX.md) — mirror local Devpost
+
+**Docs en MongoDB:** `python3 scripts/sync_project_documentation.py` → `GET /api/v1/project-docs`
 
 ## Agentes (pool global)
 

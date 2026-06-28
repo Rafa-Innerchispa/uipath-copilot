@@ -11,6 +11,7 @@ from uipath_copilot.settings import (
     UIPATH_BASE_URL,
     UIPATH_CLIENT_ID,
     UIPATH_CLIENT_SECRET,
+    UIPATH_IDENTITY_TOKEN_URL,
     UIPATH_ORG_UNIT_ID,
     UIPATH_SCOPE,
 )
@@ -30,7 +31,10 @@ def get_access_token() -> str:
     if _token_cache["access_token"] and _token_cache["expires_at"] > now + 60:
         return _token_cache["access_token"]
 
-    url = f"{UIPATH_BASE_URL}/identity_/connect/token"
+    url = UIPATH_IDENTITY_TOKEN_URL
+    if not url:
+        raise RuntimeError("UIPATH_IDENTITY_TOKEN_URL vacío — revisa UIPATH_BASE_URL / UIPATH_ORGANIZATION")
+
     data = {
         "grant_type": "client_credentials",
         "client_id": UIPATH_CLIENT_ID,
@@ -38,8 +42,13 @@ def get_access_token() -> str:
         "scope": UIPATH_SCOPE,
     }
     r = requests.post(url, data=data, timeout=30)
-    r.raise_for_status()
-    body = r.json()
+    if r.status_code != 200:
+        snippet = (r.text or "")[:200]
+        raise RuntimeError(f"OAuth UiPath HTTP {r.status_code}: {snippet}")
+    try:
+        body = r.json()
+    except Exception as exc:
+        raise RuntimeError("OAuth UiPath devolvió no-JSON (revisa URL identity org-level)") from exc
     _token_cache["access_token"] = body["access_token"]
     _token_cache["expires_at"] = now + int(body.get("expires_in", 3600))
     return _token_cache["access_token"]
@@ -82,6 +91,17 @@ def maestro_status() -> dict[str, Any]:
         return {"configured": False, "reachable": False}
     try:
         get_access_token()
-        return {"configured": True, "reachable": True, "base_url": UIPATH_BASE_URL}
+        return {
+            "configured": True,
+            "reachable": True,
+            "base_url": UIPATH_BASE_URL,
+            "identity_url": UIPATH_IDENTITY_TOKEN_URL,
+        }
     except Exception as exc:
-        return {"configured": True, "reachable": False, "error": str(exc)}
+        return {
+            "configured": True,
+            "reachable": False,
+            "base_url": UIPATH_BASE_URL,
+            "identity_url": UIPATH_IDENTITY_TOKEN_URL,
+            "error": str(exc),
+        }

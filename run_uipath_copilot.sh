@@ -7,4 +7,6 @@ if [[ -f venv/bin/activate ]]; then
   source venv/bin/activate
 fi
 export UIPATH_COPILOT_PORT="${UIPATH_COPILOT_PORT:-8097}"
-exec python3 main.py
+PY="${ROOT}/venv/bin/python3"
+[[ -x "$PY" ]] || PY="python3"
+exec "$PY" main.py

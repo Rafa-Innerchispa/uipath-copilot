@@ -1,4 +1,5 @@
-venv/
+.uipath_secret
+.uipath_secret.*
 .env
 .env.*
 !.env.example
