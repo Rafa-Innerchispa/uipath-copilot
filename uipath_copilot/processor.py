@@ -24,6 +24,15 @@ from uipath_copilot.i18n import normalize_lang, t as i18n_t
 STAGES = ("Intake", "Investigation", "Remediation", "Approval")
 
 
+def _sanitize_client_name(name: str | None) -> str | None:
+    if not name:
+        return None
+    s = str(name).strip()
+    if "{{" in s or "}}" in s or "maestro_raw_case_id" in s.lower():
+        return None
+    return s
+
+
 def has_blocking_gate(findings: list[dict]) -> dict | None:
     """Primer gate bloqueante/alta que impide avanzar."""
     for f in findings:
@@ -247,13 +256,16 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("case_id es obligatorio")
 
     stage = payload.get("stage") or payload.get("current_stage") or "Intake"
+    stage_map = {s.lower(): s for s in STAGES}
+    if isinstance(stage, str):
+        stage = stage_map.get(stage.strip().lower(), stage.strip())
     if stage not in STAGES:
         stage = "Intake"
 
     severity = payload.get("severity") or "medium"
+    prior = get_case(case_id) or {}
     lang = normalize_lang(payload.get("panel_lang") or prior.get("panel_lang"))
     incident = _detect_incident(payload)
-    prior = get_case(case_id) or {}
 
     append_event(case_id, {"type": "webhook_received", "stage": stage, "incident": incident})
     log_activity("info", "MAESTRO", f"Webhook received · stage={stage} · {incident}")
@@ -277,7 +289,7 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         indent=2,
     )
     analysis = _stage_analysis(stage, context, lang=lang)
-    client_name = payload.get("client_name") or prior.get("client_name")
+    client_name = _sanitize_client_name(payload.get("client_name") or prior.get("client_name"))
     report_header = prior.get("report_header") or (
         f"{i18n_t(lang, 'report_title')}\n\n"
         f"- {i18n_t(lang, 'report_client')} {client_name or '—'}\n"
@@ -311,7 +323,7 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
             "severity": severity,
             "needs_human": needs_human,
             "approval_status": approval_status,
-            "client_name": payload.get("client_name") or prior.get("client_name"),
+            "client_name": _sanitize_client_name(payload.get("client_name") or prior.get("client_name")),
             "scenario_id": payload.get("scenario_id") or prior.get("scenario_id"),
             "scenario_title_en": payload.get("scenario_title_en") or prior.get("scenario_title_en"),
             "scenario_title_es": payload.get("scenario_title_es") or prior.get("scenario_title_es"),
@@ -327,6 +339,10 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
             "maestro_handoff": maestro_handoff,
             "action_center_task": action_center_result,
             "payload_snapshot": payload,
+            "notes": payload.get("notes") or prior.get("notes"),
+            "maestro_source": payload.get("raw_logs") or prior.get("maestro_source") or "",
+            "integration_source": payload.get("integration_source") or prior.get("integration_source"),
+            "maestro_id_unsubstituted": payload.get("maestro_id_unsubstituted") or prior.get("maestro_id_unsubstituted"),
         }
     )
     append_event(case_id, {"type": "processed", "stage": stage, "needs_human": needs_human})
@@ -338,7 +354,7 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
         "incident_type": incident,
         "needs_human": needs_human,
         "approval_status": approval_status,
-        "client_name": payload.get("client_name") or prior.get("client_name"),
+        "client_name": _sanitize_client_name(payload.get("client_name") or prior.get("client_name")),
         "scenario_id": payload.get("scenario_id"),
         "findings": findings,
         "report_markdown": report_md,

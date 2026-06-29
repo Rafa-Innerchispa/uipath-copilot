@@ -31,5 +31,9 @@ def list_activity(limit: int = 80) -> list[dict[str, Any]]:
     return items[-limit:]
 
 
+def clear_activity() -> None:
+    _log.clear()
+
+
 def log_connection_check(name: str, ok: bool, detail: str = "") -> None:
     log_activity("ok" if ok else "err", "CONN", f"{name}: {'OK' if ok else 'FAIL'}" + (f" — {detail}" if detail else ""))

@@ -39,6 +39,12 @@
     .pill.ok { background: #14532d; color: var(--ok); }
     .pill.bad { background: #450a0a; color: var(--bad); }
     .pill.warn { background: #451a03; color: var(--warn); }
+    .prog-wrap { min-width: 140px; }
+    .prog-row { display: flex; align-items: center; gap: .35rem; margin-bottom: .15rem; }
+    .prog-bar { flex: 1; height: 6px; background: #334155; border-radius: 999px; overflow: hidden; }
+    .prog-fill { height: 100%; background: linear-gradient(90deg, #2563eb, var(--ok)); border-radius: 999px; transition: width .3s; }
+    .prog-pct { font-size: .68rem; font-weight: 700; color: var(--accent); min-width: 2.2rem; }
+    .prog-label { font-size: .65rem; color: var(--muted); display: block; }
     table { width: 100%; border-collapse: collapse; font-size: .78rem; }
     th, td { text-align: left; padding: .4rem .3rem; border-bottom: 1px solid #334155; }
     th { color: var(--muted); font-size: .68rem; text-transform: uppercase; }
@@ -73,6 +79,14 @@
     .aside-title { margin: 0 0 .35rem; font-size: .85rem; font-weight: 700; }
     .hitl-actions { display: flex; gap: .5rem; margin: .5rem 0; flex-wrap: wrap; }
     .intro-compact { font-size: .78rem; color: var(--muted); margin-bottom: .5rem; }
+    .platform-table { font-size: .72rem; width: 100%; }
+    .platform-table td { vertical-align: top; padding: .35rem .25rem; }
+    .platform-table .comp-name { font-weight: 600; color: var(--text); }
+    .platform-table .comp-where { font-size: .65rem; color: var(--muted); }
+    .platform-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .4rem; }
+    .platform-score { font-size: 1.1rem; font-weight: 800; color: var(--ok); }
+    .demo-row { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .5rem; }
+    .demo-row button { font-size: .68rem; padding: .3rem .55rem; }
   </style>
 </head>
 <body>
@@ -97,6 +111,23 @@
         <div class="consult-grid" id="consult-grid"></div>
       </div>
       <div class="grid" id="status-grid"></div>
+      <div class="card" id="platform-card">
+        <div class="platform-head">
+          <h3 id="t-platform-h" style="text-transform:none;font-size:.85rem;color:var(--text);margin:0">UiPath Platform Usage</h3>
+          <span class="platform-score" id="platform-score-pct">—</span>
+        </div>
+        <p id="platform-pending" class="intro-compact" style="margin:0 0 .35rem;font-size:.72rem;color:var(--warn);display:none"></p>
+        <p id="platform-intro" class="intro-compact" style="margin:0 0 .5rem"></p>
+        <table class="platform-table"><tbody id="platform-body"></tbody></table>
+        <p id="platform-verify-label" class="intro-compact" style="margin:.55rem 0 .35rem;font-size:.72rem;color:var(--muted)"></p>
+        <div class="demo-row">
+          <button type="button" class="secondary" id="btn-verify-all">Verificar 12/12</button>
+          <button type="button" class="secondary" id="btn-demo-agent">Agent Builder</button>
+          <button type="button" class="secondary" id="btn-demo-tests">Test Manager</button>
+          <button type="button" class="secondary" id="btn-demo-du">Document UP</button>
+          <button type="button" class="ghost" id="btn-demo-caseapp">Case App</button>
+        </div>
+      </div>
       <div class="card">
         <h3 id="t-cases-h">Casos operativos</h3>
         <table>
@@ -113,7 +144,10 @@
       <div class="term-panel">
         <div class="term-head">
           <span id="t-term-label">Log de actividad en vivo</span>
-          <button type="button" class="ghost" id="btn-clear-term" style="padding:.15rem .4rem;font-size:.65rem">Limpiar</button>
+          <span style="display:flex;gap:.25rem">
+            <button type="button" class="ghost" id="btn-reset-demo" style="padding:.15rem .4rem;font-size:.65rem">Reset casos</button>
+            <button type="button" class="ghost" id="btn-clear-term" style="padding:.15rem .4rem;font-size:.65rem">Limpiar log</button>
+          </span>
         </div>
         <div id="terminal"></div>
       </div>
@@ -129,6 +163,7 @@
           <div id="m-findings"></div>
           <textarea id="m-comment" rows="2" placeholder="Comentario (opcional)"></textarea>
           <div class="hitl-actions">
+            <button type="button" class="secondary" id="btn-continue-flow" style="display:none">Continuar flujo</button>
             <button type="button" class="approve-btn" id="btn-approve">Aprobar</button>
             <button type="button" class="danger" id="btn-reject">Rechazar</button>
           </div>
@@ -143,9 +178,9 @@
     const I18N = {
       es: {
         title: "PC Doctor — Maestro Case Copilot",
-        introCompact: "Un clic = 4 etapas Maestro + MongoDB + Ollama. Log y aprobación en el panel derecho.",
-        consultH: "Consultas operativas (clientes reales)",
-        consultRun: "Ejecutar flujo completo (4 etapas)",
+        introCompact: "Dos entradas reales al mismo motor (MongoDB + Ollama): Start Job en UiPath Maestro, o consulta operativa desde aquí.",
+        consultH: "Consultas operativas (clientes reales MongoDB)",
+        consultRun: "Ejecutar las 4 etapas desde el servidor",
         running: "Ejecutando 4 etapas… espera 1–2 min (Ollama). Puedes ver el log arriba →",
         casesH: "Casos operativos",
         client: "Cliente", stage: "Etapa", progress: "Progreso", updated: "Actualizado", appr: "Aprobación",
@@ -154,20 +189,45 @@
         pending: "Pendiente", detailH: "Detalle del caso",
         detailEmpty: "Selecciona un caso en la tabla o ejecuta una consulta.",
         approve: "Aprobar", reject: "Rechazar", commentPh: "Comentario (opcional)",
-        refresh: "Actualizar", termLabel: "Log de actividad en vivo", clear: "Limpiar",
+        refresh: "Actualizar", termLabel: "Log de actividad en vivo", clear: "Limpiar log",
+        resetDemo: "Reset casos", resetConfirm: "¿Borrar TODOS los casos del panel y empezar de cero? Escribe RESET en el siguiente paso.",
+        resetPrompt: "Escribe RESET para confirmar:",
+        resetOk: "Panel limpio — listo para un Start Job nuevo",
         noCases: "Sin casos — ejecuta una consulta.",
         connErr: "No se conecta a la API.",
         langBtn: "EN",
         bannerApproved: "✅ APROBADO — caso cerrado",
         bannerRejected: "❌ RECHAZADO",
         bannerPending: "⏳ Aprobación pendiente — pulsa Aprobar abajo",
+        bannerIntakeOnly: "ℹ️ Solo Intake — aún no llega a Approval. En Maestro debe continuar Investigation → Remediation → Approval. No se aprueba aquí.",
+        bannerMaestroWaiting: "⏸️ Maestro Cloud recibió webhook — el servidor completa solo Investigation → Remediation → Approval (1–2 min). Si es un caso antiguo atascado, pulsa Continuar flujo.",
+        bannerMaestroComplete: "✅ Las 4 etapas llegaron desde Maestro Cloud. Webhook + MongoDB + Ollama OK.",
+        bannerMaestroBroken: "⚠️ Caso Maestro incompleto (sin cliente / case_id no sustituido). Corrige variable Case ID en el API Workflow.",
+        bannerMaestroOk: "✅ Integración Maestro Cloud activa — webhook OK, MongoDB + Ollama. ID real del caso abajo.",
+        maestroCloudLabel: "Maestro Cloud",
+        continueFlow: "Continuar flujo",
+        continuingFlow: "Completando etapas pendientes… Ollama 1–2 min",
+        continueOk: "Etapas completadas — revisa progreso",
         approving: "Procesando aprobación…",
+        platformH: "UiPath Platform Usage — licencia Community",
+        platformIntro: "Checklist del hackathon: productos UiPath integrados con evidencia en vivo en tu servidor.",
+        platformScoreHint: "productos verificados",
+        platformPending: "Pendientes para 12/12:",
+        platformVerifyAll: "Verificar 12/12",
+        platformVerifying: "Verificando integraciones…",
+        platformWhere: "Dónde",
+        platformDemo: "Abrir",
+        platformVerifyRow: "Verificación en vivo (API real)",
+        demoAgent: "Agent Builder — clasificar intake",
+        demoTests: "Test Manager — smoke + JUnit",
+        demoDu: "Document UP — API extracción",
+        demoCaseApp: "Case App — panel móvil",
       },
       en: {
         title: "PC Doctor — Maestro Case Copilot",
-        introCompact: "One click = 4 Maestro stages + MongoDB + Ollama. Log and approval on the right panel.",
-        consultH: "Operational consultations",
-        consultRun: "Run full flow (4 stages)",
+        introCompact: "Two real entry points to the same engine (MongoDB + Ollama): Start Job in UiPath Maestro, or operational consultation from here.",
+        consultH: "Operational consultations (real MongoDB clients)",
+        consultRun: "Run all 4 stages from the server",
         running: "Running 4 stages… wait 1–2 min. Watch the log above →",
         casesH: "Operational cases",
         client: "Client", stage: "Stage", progress: "Progress", updated: "Updated", appr: "Approval",
@@ -176,14 +236,39 @@
         pending: "Pending", detailH: "Case detail",
         detailEmpty: "Select a case in the table or run a consultation.",
         approve: "Approve", reject: "Reject", commentPh: "Comment (optional)",
-        refresh: "Refresh", termLabel: "Live activity log", clear: "Clear",
+        refresh: "Refresh", termLabel: "Live activity log", clear: "Clear log",
+        resetDemo: "Reset cases", resetConfirm: "Delete ALL panel cases and start fresh? Type RESET next.",
+        resetPrompt: "Type RESET to confirm:",
+        resetOk: "Panel cleared — ready for a new Start Job",
         noCases: "No cases yet.",
         connErr: "Cannot reach API.",
         langBtn: "ES",
         bannerApproved: "✅ APPROVED — case closed",
         bannerRejected: "❌ REJECTED",
         bannerPending: "⏳ Pending approval — click Approve below",
+        bannerIntakeOnly: "ℹ️ Intake only — not at Approval yet. Maestro must run Investigation → Remediation → Approval. Cannot approve here.",
+        bannerMaestroWaiting: "⏸️ Maestro Cloud webhook received — server auto-completes Investigation → Remediation → Approval (1–2 min). For old stuck cases, click Continue flow.",
+        bannerMaestroComplete: "✅ All 4 stages arrived from Maestro Cloud. Webhook + MongoDB + Ollama OK.",
+        bannerMaestroBroken: "⚠️ Incomplete Maestro case (no client / case_id not substituted). Fix Case ID variable in API Workflow.",
+        bannerMaestroOk: "✅ Maestro Cloud integration active — webhook OK, MongoDB + Ollama. Real case ID below.",
+        maestroCloudLabel: "Maestro Cloud",
+        continueFlow: "Continue flow",
+        continuingFlow: "Completing pending stages… Ollama 1–2 min",
+        continueOk: "Stages complete — check progress",
         approving: "Processing approval…",
+        platformH: "UiPath Platform Usage — Community License",
+        platformIntro: "Hackathon checklist: UiPath products integrated with live evidence on your server.",
+        platformScoreHint: "products verified",
+        platformPending: "Pending for 12/12:",
+        platformVerifyAll: "Verify 12/12",
+        platformVerifying: "Verifying integrations…",
+        platformWhere: "Where",
+        platformDemo: "Open",
+        platformVerifyRow: "Live verification (real API)",
+        demoAgent: "Agent Builder — classify intake",
+        demoTests: "Test Manager — smoke + JUnit",
+        demoDu: "Document UP — extraction API",
+        demoCaseApp: "Case App — mobile panel",
       },
     };
 
@@ -199,7 +284,39 @@
       if (!c) return c;
       const out = { ...c };
       if (out.approval_status === "pending") out.approval_status = null;
+      const notes = out.notes || (out.payload_snapshot && out.payload_snapshot.notes) || "";
+      if (notes.includes("maestro_raw_case_id=")) {
+        const m = notes.match(/maestro_raw_case_id=([^;]+)/);
+        if (m) out.maestro_id_unsubstituted = out.maestro_id_unsubstituted || m[1].trim();
+        out.integration_source = out.integration_source || "maestro_cloud";
+      }
+      if (notes.includes("source=maestro_cloud") || out.integration_source === "maestro_cloud") {
+        out.integration_source = "maestro_cloud";
+      }
       return out;
+    }
+
+    function isMaestroCloud(c) {
+      c = normalizeCase(c);
+      return c.integration_source === "maestro_cloud" || String(c.case_id || "").match(/^[0-9a-f-]{36}$/i);
+    }
+
+    function isBrokenClientName(name) {
+      if (!name) return true;
+      const s = String(name);
+      return s.includes("{{") || s.includes("}}") || s.toLowerCase().includes("maestro_raw_case_id");
+    }
+
+    function displayClientCell(c) {
+      c = normalizeCase(c);
+      if (c.client_name && !isBrokenClientName(c.client_name)) return esc(c.client_name);
+      if (String(c.case_id).includes("{{")) {
+        return `<span style="color:var(--bad)">Maestro ⚠ ${esc(String(c.case_id).slice(0, 14))}</span>`;
+      }
+      if (c.integration_source === "maestro_cloud" || (c.maestro_id_unsubstituted && !c.client_name)) {
+        return `<span class="pill ok">${t("maestroCloudLabel")} · ${esc(String(c.case_id).slice(0, 8))}…</span>`;
+      }
+      return `<span style="color:var(--muted)">${esc(String(c.case_id).slice(0, 8))}…</span>`;
     }
 
     function t(k) { return (I18N[lang] || I18N.es)[k] || k; }
@@ -280,10 +397,145 @@
       document.getElementById("btn-refresh").textContent = t("refresh");
       document.getElementById("t-term-label").textContent = t("termLabel");
       document.getElementById("btn-clear-term").textContent = t("clear");
+      const brd = document.getElementById("btn-reset-demo");
+      if (brd) brd.textContent = t("resetDemo");
       document.getElementById("btn-lang").textContent = t("langBtn");
+      document.getElementById("t-platform-h").textContent = t("platformH");
+      document.getElementById("platform-intro").textContent = t("platformIntro");
+      const pv = document.getElementById("platform-verify-label");
+      if (pv) pv.textContent = t("platformVerifyRow");
+      const bva = document.getElementById("btn-verify-all");
+      if (bva) bva.textContent = t("platformVerifyAll");
+      document.getElementById("btn-demo-agent").textContent = t("demoAgent");
+      document.getElementById("btn-demo-tests").textContent = t("demoTests");
+      document.getElementById("btn-demo-du").textContent = t("demoDu");
+      document.getElementById("btn-demo-caseapp").textContent = t("demoCaseApp");
+      const bcf = document.getElementById("btn-continue-flow");
+      if (bcf) bcf.textContent = t("continueFlow");
     }
 
     let publicBase = "";
+    let lastScorecard = null;
+
+    function demoUrl(path, external) {
+      if (!path) return "#";
+      if (external || path.startsWith("http")) return path;
+      const base = (publicBase || apiBase() || "").replace(/\/$/, "");
+      return path.includes("{case_id}") && selectedCase
+        ? `${base}${path.replace("{case_id}", encodeURIComponent(selectedCase.case_id))}`
+        : `${base}${path}`;
+    }
+
+    function renderPlatformScorecard(score) {
+      lastScorecard = score;
+      const el = document.getElementById("platform-body");
+      const pct = document.getElementById("platform-score-pct");
+      if (!score || !score.bonuses) { el.innerHTML = ""; pct.textContent = "—"; return; }
+      pct.textContent = `${score.score_pct}% — ${score.bonuses_met}/${score.bonuses_total} ${t("platformScoreHint")}`;
+      const pendEl = document.getElementById("platform-pending");
+      if (pendEl) {
+        const pending = (score.bonuses || []).filter(b => !b.met);
+        if (pending.length) {
+          pendEl.style.display = "block";
+          pendEl.textContent = `${t("platformPending")} ${pending.map(b => b.name).join(" · ")}`;
+        } else {
+          pendEl.style.display = "none";
+          pendEl.textContent = "";
+        }
+      }
+      el.innerHTML = score.bonuses.map(b => {
+        const label = lang === "en" ? (b.jury_en || b.name) : (b.jury_es || b.name);
+        const url = demoUrl(b.demo_path, b.external);
+        const pill = b.met ? "ok" : "warn";
+        const st = b.met ? (lang === "en" ? "LIVE" : "ACTIVO") : (lang === "en" ? "PENDING" : "PENDIENTE");
+        const ev = b.evidence || b.setup || "";
+        return `<tr>
+          <td style="width:28%"><span class="comp-name">${esc(b.name)}</span><br/><span class="comp-where">${esc(b.where || "")}</span></td>
+          <td>${esc(label)}<br/><span class="comp-where">${esc(ev)}</span></td>
+          <td style="width:12%"><span class="pill ${pill}">${st}</span></td>
+          <td style="width:14%"><a href="${esc(url)}" target="_blank" rel="noopener">${t("platformDemo")}</a></td>
+        </tr>`;
+      }).join("");
+    }
+
+    async function runAgentDemo() {
+      termLog("info", "AGENT-BUILDER", lang === "en" ? "Classifying sample intake…" : "Clasificando intake de ejemplo…");
+      try {
+        const r = await apiFetch("/api/v1/agent-builder/intake", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: "Visita residencial Domínguez — revisión post-SOP",
+            trigger_webhook: true,
+            panel_lang: lang,
+          }),
+          noLang: true,
+        });
+        termLog("ok", "AGENT-BUILDER", `${r.classification?.incident_type} · case ${(r.case_id || "").slice(0, 8)}`);
+        if (r.case_id) { await openCase(r.case_id); await refreshCasesTable(true); await load(); }
+      } catch (e) { termLog("err", "AGENT-BUILDER", String(e.message)); }
+    }
+
+    async function runTestsDemo() {
+      termLog("info", "TEST-MANAGER", lang === "en" ? "Running smoke suite…" : "Ejecutando smoke suite…");
+      try {
+        const r = await apiFetch("/api/v1/test-manager/run", { method: "POST", noLang: true });
+        termLog("ok", "TEST-MANAGER", `${r.passed}/${r.total} PASS`);
+        await load();
+      } catch (e) { termLog("err", "TEST-MANAGER", String(e.message)); }
+    }
+
+    async function runDuDemo() {
+      termLog("info", "DU", lang === "en" ? "Document Understanding ingest…" : "Ingest Document Understanding…");
+      try {
+        const r = await apiFetch("/api/v1/document-understanding/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            extracted: {
+              client_name: "DOMINGUEZ GOMEZ JUAN ERNESTO",
+              text_preview: "Informe inspección — hub OK, sin placeholders.",
+            },
+            panel_lang: lang,
+          }),
+          noLang: true,
+        });
+        termLog("ok", "DU", `case ${(r.case_id || "").slice(0, 8)}`);
+        await load();
+      } catch (e) { termLog("err", "DU", String(e.message)); }
+    }
+
+    async function openCaseAppDemo() {
+      if (!selectedCase) {
+        showError(lang === "en" ? "Select a case first" : "Selecciona un caso primero");
+        return;
+      }
+      try {
+        await apiFetch(`/api/v1/apps/case/${encodeURIComponent(selectedCase.case_id)}`, { silent: true, noLang: true });
+      } catch (_) {}
+      window.open(demoUrl("/apps/case/{case_id}"), "_blank");
+    }
+
+    async function verifyAllPlatform() {
+      if (isRunning) return;
+      isRunning = true;
+      document.getElementById("running-banner").textContent = t("platformVerifying");
+      document.getElementById("running-banner").classList.add("show");
+      termLog("info", "SCORECARD", t("platformVerifyAll"));
+      try {
+        const score = await apiFetch("/api/v1/platform-scorecard/verify-all", { method: "POST", noLang: true });
+        renderPlatformScorecard(score);
+        renderStatus(await apiFetch("/status", { silent: true }), score);
+        termLog("ok", "SCORECARD", `${score.bonuses_met}/${score.bonuses_total} · ${score.score_pct}%`);
+        await refreshCasesTable(true);
+      } catch (e) {
+        termLog("err", "SCORECARD", String(e.message));
+        showError(String(e.message));
+      } finally {
+        isRunning = false;
+        document.getElementById("running-banner").classList.remove("show");
+      }
+    }
 
     async function loadUiConfig() {
       try {
@@ -314,6 +566,8 @@
           <a href="${esc(u.api)}" target="_blank" rel="noopener">API JSON</a>
         </div>`;
     }
+
+    function stopCasePoll() {
       if (casePollTimer) { clearInterval(casePollTimer); casePollTimer = null; }
     }
 
@@ -321,10 +575,47 @@
       return status === "approved" || status === "rejected";
     }
 
+    function stageProgress(c) {
+      c = normalizeCase(c);
+      const completed = STAGES.filter(s => (c.stages_completed || []).includes(s));
+      const pct = Math.round((completed.length / STAGES.length) * 100);
+      const current = c.stage && !completed.includes(c.stage) ? c.stage : (completed[completed.length - 1] || c.stage || "—");
+      return { pct, completed, current, label: completed.join(" → ") || "—" };
+    }
+
+    function renderProgressCell(c) {
+      const p = stageProgress(c);
+      return `<div class="prog-wrap">
+        <div class="prog-row"><div class="prog-bar"><div class="prog-fill" style="width:${p.pct}%"></div></div><span class="prog-pct">${p.pct}%</span></div>
+        <span class="prog-label">${esc(p.label)}${p.current && p.pct < 100 ? ` · → ${esc(p.current)}` : ""}</span>
+      </div>`;
+    }
+
+    function canContinueFlow(c) {
+      if (!c || isFinalApproval(c.approval_status)) return false;
+      if (c.flow_blocked) return false;
+      return !maestroProgressComplete(c);
+    }
+
+    function nextMaestroStage(c) {
+      const done = new Set(c.stages_completed || []);
+      for (const s of STAGES) {
+        if (!done.has(s)) return s;
+      }
+      return null;
+    }
+
+    function maestroProgressComplete(c) {
+      const done = new Set(c.stages_completed || []);
+      return STAGES.every(s => done.has(s));
+    }
+
     function canApprove(c) {
       if (!c || isFinalApproval(c.approval_status)) return false;
-      return c.stage === "Approval" || c.needs_human || c.flow_blocked
-        || (c.stages_completed || []).includes("Approval");
+      // Solo aprobar en etapa Approval (HITL final), no Intake suelto de Maestro
+      if (c.stage === "Approval" || (c.stages_completed || []).includes("Approval")) return true;
+      if (c.flow_blocked) return false;
+      return false;
     }
 
     function renderDetail(c) {
@@ -340,7 +631,10 @@
         if (s === "Approval" && canApprove(c)) cls += " pending-hitl";
         return `<span class="${cls}">${s}</span>`;
       }).join("");
-      document.getElementById("m-meta").innerHTML = `<p style="font-size:.75rem;color:var(--muted);margin:.3rem 0"><code>${esc(c.case_id)}</code><br/><strong>${esc(c.client_name || "—")}</strong></p>`;
+      const clientLabel = (c.client_name && !isBrokenClientName(c.client_name))
+        ? c.client_name
+        : (c.integration_source === "maestro_cloud" ? t("maestroCloudLabel") : "—");
+      document.getElementById("m-meta").innerHTML = `<p style="font-size:.75rem;color:var(--muted);margin:.3rem 0"><code>${esc(c.case_id)}</code><br/><strong>${esc(clientLabel)} · ${esc(String(c.case_id).slice(0, 8))}…</strong>${c.maestro_id_unsubstituted ? `<br/><span style="font-size:.65rem">UiPath envió <code>${esc(c.maestro_id_unsubstituted)}</code> → UUID del servidor arriba</span>` : ""}</p>`;
       document.getElementById("m-findings").innerHTML = (c.findings || []).slice(0, 6).map(f =>
         `<span class="finding"><span class="pill ${f.passed ? "ok" : "bad"}">${f.passed ? "OK" : "BLOCK"}</span> ${esc(f.gate)}</span>`
       ).join("");
@@ -351,13 +645,34 @@
       else if (c.approval_status === "rejected") { banner.classList.add("show-rejected"); banner.textContent = t("bannerRejected"); }
       else if (c.flow_blocked) { banner.classList.add("show-pending"); banner.textContent = t("bannerBlocked") + (c.blocking_gate ? ` (${c.blocking_gate})` : ""); }
       else if (canApprove(c)) { banner.classList.add("show-pending"); banner.textContent = t("bannerPending"); }
+      else if (c.integration_source === "maestro_cloud" && !String(c.case_id).includes("{{")) {
+        if (maestroProgressComplete(c)) {
+          banner.classList.add("show-approved");
+          banner.textContent = t("bannerMaestroComplete") + ` · ${(c.stages_completed || []).join(" → ")}`;
+        } else {
+          const next = nextMaestroStage(c) || "Investigation";
+          banner.classList.add("show-pending");
+          banner.textContent = t("bannerMaestroWaiting").replace("{next}", next)
+            + ` · ${(c.stages_completed || []).join(" → ") || c.stage}`;
+        }
+      }
+      else if (String(c.case_id).includes("{{") || (!c.client_name && c.stage === "Intake" && !(c.stages_completed || []).includes("Approval") && c.integration_source !== "maestro_cloud")) {
+        banner.classList.add("show-pending");
+        banner.textContent = String(c.case_id).includes("{{") ? t("bannerMaestroBroken") : t("bannerIntakeOnly");
+      }
       const busySameCase = isRunning && runningCaseId && c.case_id === runningCaseId;
       const locked = isFinalApproval(c.approval_status) || isDeciding || busySameCase;
       const btnA = document.getElementById("btn-approve");
       const btnR = document.getElementById("btn-reject");
+      const btnC = document.getElementById("btn-continue-flow");
       const allow = canApprove(c) && !locked;
+      const showContinue = canContinueFlow(c) && !locked && !isRunning;
       btnA.disabled = !allow;
       btnR.disabled = !allow;
+      if (btnC) {
+        btnC.style.display = showContinue ? "inline-block" : "none";
+        btnC.disabled = !showContinue || isRunning;
+      }
       btnA.title = allow ? "" : (busySameCase ? (lang === "en" ? "Wait for 4-stage run to finish" : "Espera a que termine el flujo de 4 etapas") : "");
       btnR.title = btnA.title;
       renderPublicLinks(c);
@@ -498,11 +813,12 @@
             ? `<span class="pill warn">${t("blocked")}</span>`
             : (c.needs_human || c.stage === "Approval" || c.approval_status === "pending"
               ? `<span class="pill warn">${t("pending")}</span>` : "—");
+        const clientCell = displayClientCell(c);
         const sel = selectedCase && selectedCase.case_id === c.case_id ? "sel" : "";
         return `<tr class="${sel} ${c.approval_status === "approved" ? "approved-row" : ""}" data-id="${esc(c.case_id)}">
-          <td>${esc(c.client_name || "—")}</td>
+          <td>${typeof clientCell === "string" && clientCell.startsWith("<") ? clientCell : esc(clientCell)}</td>
           <td>${esc(c.stage || "—")}</td>
-          <td style="font-size:.68rem">${esc((c.stages_completed || []).join(" → "))}</td>
+          <td>${renderProgressCell(c)}</td>
           <td style="font-size:.68rem;color:var(--muted)">${formatDt(c.updated_at || c.created_at)}</td>
           <td>${appr}</td></tr>`;
       }).join("");
@@ -538,6 +854,7 @@
         ]);
         renderConsultations(cons.consultations || []);
         renderStatus(st, score);
+        renderPlatformScorecard(score);
         renderCases(cases.cases || []);
         if (selectedCase) {
           const fresh = (cases.cases || []).find(x => x.case_id === selectedCase.case_id);
@@ -571,15 +888,86 @@
     }
     function hideError() { document.getElementById("err-banner").classList.remove("show"); }
 
-    document.getElementById("btn-refresh").onclick = () => load();
+    document.getElementById("btn-refresh").onclick = async () => {
+      await loadUiConfig().catch(() => {});
+      await load();
+      termLog("info", "SYS", lang === "en" ? "List refreshed" : "Lista actualizada");
+    };
+    async function continueMaestroFlow() {
+      if (!selectedCase || isRunning) return;
+      const caseId = selectedCase.case_id;
+      isRunning = true;
+      document.getElementById("running-banner").textContent = t("continuingFlow");
+      document.getElementById("running-banner").classList.add("show");
+      document.querySelectorAll(".consult-btn").forEach(b => b.disabled = true);
+      termLog("info", "MAESTRO", `${t("continueFlow")} · ${caseId.slice(0, 8)}…`);
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 300000);
+        const r = await apiFetch(`/api/v1/cases/${encodeURIComponent(caseId)}/continue-flow`, {
+          method: "POST",
+          noLang: true,
+          signal: ctrl.signal,
+        });
+        clearTimeout(timer);
+        termLog("ok", "MAESTRO", r.flow_blocked
+          ? (lang === "en" ? `BLOCKED · ${r.blocking_gate || "gate"}` : `BLOQUEADO · ${r.blocking_gate || "gate"}`)
+          : t("continueOk") + ` · ${(r.stages_completed || []).join(" → ")}`);
+        await openCase(caseId);
+        await refreshCasesTable(true);
+      } catch (e) {
+        termLog("err", "MAESTRO", String(e.message));
+        showError(String(e.message));
+      } finally {
+        isRunning = false;
+        document.getElementById("running-banner").classList.remove("show");
+        document.querySelectorAll(".consult-btn").forEach(b => b.disabled = false);
+        if (selectedCase) renderDetail(normalizeCase(selectedCase));
+      }
+    }
+
+    async function resetDemoPanel() {
+      if (!confirm(t("resetConfirm"))) return;
+      const typed = prompt(t("resetPrompt"));
+      if ((typed || "").trim().toUpperCase() !== "RESET") return;
+      try {
+        const r = await apiFetch("/api/v1/demo/reset?confirm=RESET", { method: "POST", noLang: true });
+        document.getElementById("terminal").innerHTML = "";
+        selectedCase = null;
+        document.getElementById("detail-content").style.display = "none";
+        document.getElementById("detail-empty").style.display = "block";
+        await load();
+        termLog("ok", "SYS", `${t("resetOk")} (${r.cases_deleted || 0})`);
+      } catch (e) {
+        termLog("err", "SYS", String(e.message));
+        showError(String(e.message));
+      }
+    }
+
+    async function clearActivityLog() {
+      document.getElementById("terminal").innerHTML = "";
+      try {
+        await apiFetch("/api/v1/activity/clear", { method: "POST", noLang: true, silent: true });
+      } catch (_) {}
+    }
+
     function bindHitlButtons() {
       const btnA = document.getElementById("btn-approve");
       const btnR = document.getElementById("btn-reject");
+      const btnC = document.getElementById("btn-continue-flow");
       btnA.addEventListener("click", (ev) => { ev.preventDefault(); decide("approve"); });
       btnR.addEventListener("click", (ev) => { ev.preventDefault(); decide("reject"); });
+      if (btnC) btnC.addEventListener("click", (ev) => { ev.preventDefault(); continueMaestroFlow(); });
     }
     bindHitlButtons();
-    document.getElementById("btn-clear-term").onclick = () => { document.getElementById("terminal").innerHTML = ""; };
+    document.getElementById("btn-demo-agent").onclick = () => runAgentDemo();
+    document.getElementById("btn-verify-all").onclick = () => verifyAllPlatform();
+    document.getElementById("btn-demo-tests").onclick = () => runTestsDemo();
+    document.getElementById("btn-demo-du").onclick = () => runDuDemo();
+    document.getElementById("btn-demo-caseapp").onclick = () => openCaseAppDemo();
+    document.getElementById("btn-clear-term").onclick = () => { clearActivityLog(); };
+    const btnReset = document.getElementById("btn-reset-demo");
+    if (btnReset) btnReset.onclick = () => { resetDemoPanel(); };
     document.getElementById("btn-lang").onclick = () => {
       lang = lang === "en" ? "es" : "en";
       localStorage.setItem("pcd-lang", lang);

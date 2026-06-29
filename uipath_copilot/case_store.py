@@ -85,3 +85,72 @@ def list_cases(limit: int = 50) -> list[dict[str, Any]]:
     ensure_case_indexes()
     cur = _db()[CASES_COLLECTION].find({}, {"_id": 0}).sort("updated_at", -1).limit(limit)
     return [_serialize_case(c) for c in cur]
+
+
+def delete_all_cases() -> int:
+    """Borra todos los casos Maestro (reset demo)."""
+    ensure_case_indexes()
+    res = _db()[CASES_COLLECTION].delete_many({})
+    return int(res.deleted_count)
+
+
+def case_audit_signals() -> dict[str, int]:
+    """Señales agregadas — no limitar a los N casos recientes del panel."""
+    ensure_case_indexes()
+    col = _db()[CASES_COLLECTION]
+    stages4 = ["Intake", "Investigation", "Remediation", "Approval"]
+    return {
+        "total": col.count_documents({}),
+        "approved": col.count_documents({"approval_status": "approved"}),
+        "rejected": col.count_documents({"approval_status": "rejected"}),
+        "at_approval": col.count_documents({"stage": "Approval"}),
+        "hitl_decided": col.count_documents(
+            {"approval_status": {"$in": ["approved", "rejected"]}}
+        ),
+        "full_flow": col.count_documents({"stages_completed": {"$all": stages4}}),
+        "maestro_cloud": col.count_documents({"integration_source": "maestro_cloud"}),
+    }
+
+
+def is_placeholder_case_id(case_id: str) -> bool:
+    c = (case_id or "").strip()
+    if not c:
+        return True
+    if "{{" in c or "}}" in c:
+        return True
+    placeholders = {
+        "VARIABLE_CASE_ID",
+        "PON_AQUI_CASE_ID",
+        "{{caseId}}",
+        "{{ caseId }}",
+        "caseId",
+    }
+    return c.upper() in placeholders or c in placeholders
+
+
+_STAGE_PRIOR = {
+    "Investigation": "Intake",
+    "Remediation": "Investigation",
+    "Approval": "Remediation",
+}
+
+
+def find_case_awaiting_stage(stage: str) -> dict[str, Any] | None:
+    """Caso reciente que completó la etapa anterior pero no esta (Maestro sin case_id real)."""
+    prior = _STAGE_PRIOR.get(stage)
+    if not prior:
+        return None
+    cur = (
+        _db()[CASES_COLLECTION]
+        .find({}, {"_id": 0})
+        .sort("updated_at", -1)
+        .limit(30)
+    )
+    for doc in cur:
+        cid = str(doc.get("case_id") or "")
+        if is_placeholder_case_id(cid):
+            continue
+        done = doc.get("stages_completed") or []
+        if prior in done and stage not in done:
+            return _serialize_case(doc)
+    return None
