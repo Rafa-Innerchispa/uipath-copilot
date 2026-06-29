@@ -125,6 +125,7 @@
           <div id="approval-banner" class="approval-banner"></div>
           <div class="stages" id="m-stages"></div>
           <div id="m-meta"></div>
+          <div id="m-public-links" style="font-size:.72rem;margin:.35rem 0"></div>
           <div id="m-findings"></div>
           <textarea id="m-comment" rows="2" placeholder="Comentario (opcional)"></textarea>
           <div class="hitl-actions">
@@ -189,9 +190,17 @@
     let lang = localStorage.getItem("pcd-lang") || "es";
     let selectedCase = null;
     let isRunning = false;
+    let runningCaseId = null;
     let isDeciding = false;
     let casePollTimer = null;
     const seenActivity = new Set();
+
+    function normalizeCase(c) {
+      if (!c) return c;
+      const out = { ...c };
+      if (out.approval_status === "pending") out.approval_status = null;
+      return out;
+    }
 
     function t(k) { return (I18N[lang] || I18N.es)[k] || k; }
 
@@ -274,11 +283,52 @@
       document.getElementById("btn-lang").textContent = t("langBtn");
     }
 
-    function stopCasePoll() {
+    let publicBase = "";
+
+    async function loadUiConfig() {
+      try {
+        const cfg = await apiFetch("/api/v1/ui-config", { silent: true });
+        publicBase = (cfg.public_base_url || "").replace(/\/$/, "");
+      } catch (_) {}
+    }
+
+    function publicCaseUrls(caseId) {
+      const base = publicBase || apiBase() || "";
+      const b = base.replace(/\/$/, "");
+      return {
+        dashboard: `${b}/dashboard?case_id=${encodeURIComponent(caseId)}`,
+        caseApp: `${b}/apps/case/${encodeURIComponent(caseId)}`,
+        api: `${b}/api/v1/cases/${encodeURIComponent(caseId)}`,
+      };
+    }
+
+    function renderPublicLinks(c) {
+      const el = document.getElementById("m-public-links");
+      if (!c || !c.case_id) { el.innerHTML = ""; return; }
+      const u = publicCaseUrls(c.case_id);
+      const lbl = lang === "en" ? "Public links (jury / mobile)" : "Enlaces públicos (jurado / móvil)";
+      el.innerHTML = `<p style="color:var(--muted);margin:0 0 .25rem">${lbl}</p>
+        <div style="word-break:break-all;line-height:1.5">
+          <a href="${esc(u.dashboard)}" target="_blank" rel="noopener">Dashboard</a> ·
+          <a href="${esc(u.caseApp)}" target="_blank" rel="noopener">Case App</a> ·
+          <a href="${esc(u.api)}" target="_blank" rel="noopener">API JSON</a>
+        </div>`;
+    }
       if (casePollTimer) { clearInterval(casePollTimer); casePollTimer = null; }
     }
 
+    function isFinalApproval(status) {
+      return status === "approved" || status === "rejected";
+    }
+
+    function canApprove(c) {
+      if (!c || isFinalApproval(c.approval_status)) return false;
+      return c.stage === "Approval" || c.needs_human || c.flow_blocked
+        || (c.stages_completed || []).includes("Approval");
+    }
+
     function renderDetail(c) {
+      c = normalizeCase(c);
       selectedCase = c;
       document.getElementById("detail-empty").style.display = "none";
       document.getElementById("detail-content").style.display = "block";
@@ -286,8 +336,8 @@
       document.getElementById("m-stages").innerHTML = STAGES.map(s => {
         let cls = "stage";
         if (done.has(s)) cls += " done";
-        if (c.stage === s && !c.approval_status) cls += " current";
-        if (s === "Approval" && c.needs_human && !c.approval_status) cls += " pending-hitl";
+        if (c.stage === s && !isFinalApproval(c.approval_status)) cls += " current";
+        if (s === "Approval" && canApprove(c)) cls += " pending-hitl";
         return `<span class="${cls}">${s}</span>`;
       }).join("");
       document.getElementById("m-meta").innerHTML = `<p style="font-size:.75rem;color:var(--muted);margin:.3rem 0"><code>${esc(c.case_id)}</code><br/><strong>${esc(c.client_name || "—")}</strong></p>`;
@@ -300,17 +350,26 @@
       if (c.approval_status === "approved") { banner.classList.add("show-approved"); banner.textContent = t("bannerApproved"); }
       else if (c.approval_status === "rejected") { banner.classList.add("show-rejected"); banner.textContent = t("bannerRejected"); }
       else if (c.flow_blocked) { banner.classList.add("show-pending"); banner.textContent = t("bannerBlocked") + (c.blocking_gate ? ` (${c.blocking_gate})` : ""); }
-      else if (c.stage === "Approval" || c.needs_human) { banner.classList.add("show-pending"); banner.textContent = t("bannerPending"); }
-      const locked = !!c.approval_status || isDeciding || isRunning;
-      document.getElementById("btn-approve").disabled = locked;
-      document.getElementById("btn-reject").disabled = locked;
+      else if (canApprove(c)) { banner.classList.add("show-pending"); banner.textContent = t("bannerPending"); }
+      const busySameCase = isRunning && runningCaseId && c.case_id === runningCaseId;
+      const locked = isFinalApproval(c.approval_status) || isDeciding || busySameCase;
+      const btnA = document.getElementById("btn-approve");
+      const btnR = document.getElementById("btn-reject");
+      const allow = canApprove(c) && !locked;
+      btnA.disabled = !allow;
+      btnR.disabled = !allow;
+      btnA.title = allow ? "" : (busySameCase ? (lang === "en" ? "Wait for 4-stage run to finish" : "Espera a que termine el flujo de 4 etapas") : "");
+      btnR.title = btnA.title;
+      renderPublicLinks(c);
     }
 
     async function openCase(id, silent = false) {
       try {
-        const c = await apiFetch(`/api/v1/cases/${encodeURIComponent(id)}`, { silent });
+        const c = normalizeCase(await apiFetch(`/api/v1/cases/${encodeURIComponent(id)}`, { silent }));
         renderDetail(c);
         if (!silent) termLog("info", "CASO", `${c.client_name || id.slice(0, 8)} · ${c.stage} · ${(c.stages_completed || []).join("→")}`);
+        if (canApprove(c) && !isFinalApproval(c.approval_status)) startPendingPoll();
+        else stopCasePoll();
         return c;
       } catch (e) {
         if (!silent) termLog("err", "CASO", String(e.message));
@@ -319,7 +378,26 @@
     }
 
     async function decide(decision) {
-      if (!selectedCase || isDeciding || isRunning) return;
+      if (!selectedCase) {
+        termLog("warn", "HITL", lang === "en" ? "Select a case first" : "Selecciona un caso primero");
+        showError(lang === "en" ? "Select a case in the table" : "Selecciona un caso en la tabla");
+        return;
+      }
+      if (isDeciding) {
+        termLog("warn", "HITL", lang === "en" ? "Approval already in progress" : "Aprobación en curso");
+        return;
+      }
+      if (isRunning && runningCaseId && selectedCase.case_id === runningCaseId) {
+        termLog("warn", "HITL", lang === "en" ? "Wait for the 4-stage run to finish" : "Espera a que termine el flujo de 4 etapas");
+        showError(lang === "en" ? "Wait for consultation to finish" : "Espera a que termine la consulta");
+        return;
+      }
+      selectedCase = normalizeCase(selectedCase);
+      if (!canApprove(selectedCase)) {
+        termLog("warn", "HITL", lang === "en" ? "Case not ready for approval" : "Caso no listo para aprobación");
+        showError(lang === "en" ? "Case not ready for approval" : "Caso no listo para aprobación");
+        return;
+      }
       isDeciding = true;
       const btnA = document.getElementById("btn-approve");
       const btnR = document.getElementById("btn-reject");
@@ -332,26 +410,23 @@
       const comment = document.getElementById("m-comment").value || "";
       try {
         termLog("info", "HITL", `${decision} → case ${caseId.slice(0, 8)}…`);
-        await apiFetch(`/api/v1/cases/${encodeURIComponent(caseId)}/human-decision`, {
+        await apiFetch(`/api/v1/cases/${encodeURIComponent(caseId)}/human-decision?lang=${lang}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ decision, comment }),
+          noLang: true,
         });
-        termLog("ok", "APROBACIÓN", `${decision.toUpperCase()} · ${selectedCase.client_name || caseId.slice(0, 8)}`);
-        await openCase(caseId);
+        termLog("ok", lang === "en" ? "APPROVAL" : "APROBACIÓN", `${decision.toUpperCase()} · ${selectedCase.client_name || caseId.slice(0, 8)}`);
+        selectedCase = normalizeCase(await openCase(caseId));
+        stopCasePoll();
         await refreshCasesTable(true);
       } catch (e) {
         termLog("err", "HITL", String(e.message));
         showError(String(e.message));
-        btnA.disabled = false;
-        btnR.disabled = false;
       } finally {
         isDeciding = false;
         btnA.textContent = origA;
-        if (selectedCase && !selectedCase.approval_status) {
-          btnA.disabled = isRunning;
-          btnR.disabled = isRunning;
-        }
+        if (selectedCase) renderDetail(selectedCase);
       }
     }
 
@@ -378,14 +453,11 @@
     async function runFullConsultation(id) {
       if (isRunning) return;
       isRunning = true;
+      runningCaseId = null;
       stopCasePoll();
       document.getElementById("running-banner").textContent = t("running");
       document.getElementById("running-banner").classList.add("show");
       document.querySelectorAll(".consult-btn").forEach(b => b.disabled = true);
-      if (selectedCase) {
-        document.getElementById("btn-approve").disabled = true;
-        document.getElementById("btn-reject").disabled = true;
-      }
       termLog("info", "CONSULTA", `Inicio · ${id}`);
       try {
         const ctrl = new AbortController();
@@ -400,6 +472,7 @@
           ? (lang === "en" ? `BLOCKED · ${r.blocking_gate || "gate"}` : `BLOQUEADO · ${r.blocking_gate || "gate"}`)
           : (lang === "en" ? `4 stages OK · ${r.client_name || id}` : `4 etapas OK · ${r.client_name || id}`));
         if (r.case_id) {
+          runningCaseId = r.case_id;
           await openCase(r.case_id);
           await refreshCasesTable(true);
         }
@@ -408,9 +481,10 @@
         showError(String(e.message));
       } finally {
         isRunning = false;
+        runningCaseId = null;
         document.getElementById("running-banner").classList.remove("show");
         document.querySelectorAll(".consult-btn").forEach(b => b.disabled = false);
-        if (selectedCase) renderDetail(selectedCase);
+        if (selectedCase) renderDetail(normalizeCase(selectedCase));
       }
     }
 
@@ -418,11 +492,12 @@
       const tbody = document.getElementById("cases-body");
       if (!cases.length) { tbody.innerHTML = `<tr><td colspan="5">${t("noCases")}</td></tr>`; return; }
       tbody.innerHTML = cases.map(c => {
-        const appr = c.approval_status
+        const appr = c.approval_status === "approved" || c.approval_status === "rejected"
           ? `<span class="pill ${c.approval_status === "approved" ? "ok" : "bad"}">${c.approval_status}</span>`
           : c.flow_blocked
             ? `<span class="pill warn">${t("blocked")}</span>`
-            : (c.needs_human || c.stage === "Approval" ? `<span class="pill warn">${t("pending")}</span>` : "—");
+            : (c.needs_human || c.stage === "Approval" || c.approval_status === "pending"
+              ? `<span class="pill warn">${t("pending")}</span>` : "—");
         const sel = selectedCase && selectedCase.case_id === c.case_id ? "sel" : "";
         return `<tr class="${sel} ${c.approval_status === "approved" ? "approved-row" : ""}" data-id="${esc(c.case_id)}">
           <td>${esc(c.client_name || "—")}</td>
@@ -466,7 +541,7 @@
         renderCases(cases.cases || []);
         if (selectedCase) {
           const fresh = (cases.cases || []).find(x => x.case_id === selectedCase.case_id);
-          if (fresh) renderDetail({ ...selectedCase, ...fresh });
+          if (fresh) renderDetail(normalizeCase({ ...selectedCase, ...fresh }));
         }
       } catch (e) {
         showError(t("connErr"));
@@ -497,8 +572,13 @@
     function hideError() { document.getElementById("err-banner").classList.remove("show"); }
 
     document.getElementById("btn-refresh").onclick = () => load();
-    document.getElementById("btn-approve").onclick = () => decide("approve");
-    document.getElementById("btn-reject").onclick = () => decide("reject");
+    function bindHitlButtons() {
+      const btnA = document.getElementById("btn-approve");
+      const btnR = document.getElementById("btn-reject");
+      btnA.addEventListener("click", (ev) => { ev.preventDefault(); decide("approve"); });
+      btnR.addEventListener("click", (ev) => { ev.preventDefault(); decide("reject"); });
+    }
+    bindHitlButtons();
     document.getElementById("btn-clear-term").onclick = () => { document.getElementById("terminal").innerHTML = ""; };
     document.getElementById("btn-lang").onclick = () => {
       lang = lang === "en" ? "es" : "en";
@@ -507,10 +587,24 @@
       load();
     };
 
+    function startPendingPoll() {
+      stopCasePoll();
+      casePollTimer = setInterval(async () => {
+        if (isDeciding || isRunning || !selectedCase || isFinalApproval(selectedCase.approval_status)) return;
+        if (!canApprove(selectedCase)) return;
+        try {
+          const c = normalizeCase(await apiFetch(`/api/v1/cases/${encodeURIComponent(selectedCase.case_id)}`, { silent: true }));
+          renderDetail(c);
+        } catch (_) {}
+      }, 5000);
+    }
+
     applyLang();
+    loadUiConfig().then(() => load());
     termLog("info", "SYS", lang === "en" ? "Panel ready — log top, detail below" : "Panel listo — log arriba, detalle abajo");
-    load();
     setInterval(pollActivity, 4000);
+    const urlCase = new URLSearchParams(window.location.search).get("case_id");
+    if (urlCase) openCase(urlCase).then(() => startPendingPoll()).catch(() => {});
   </script>
 </body>
 </html>

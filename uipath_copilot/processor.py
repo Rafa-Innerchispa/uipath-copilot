@@ -300,8 +300,7 @@ def process_webhook(payload: dict[str, Any]) -> dict[str, Any]:
 
     stages_completed = list(dict.fromkeys((prior.get("stages_completed") or []) + [stage]))
     approval_status = prior.get("approval_status")
-    if stage == "Approval" and not approval_status:
-        approval_status = "pending"
+    # approval_status solo se setea con decisión humana (approved/rejected), no "pending"
 
     record = save_case(
         {

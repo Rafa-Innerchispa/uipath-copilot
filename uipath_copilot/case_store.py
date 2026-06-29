@@ -75,6 +75,9 @@ def _serialize_case(doc: dict[str, Any]) -> dict[str, Any]:
         val = out.get(key)
         if hasattr(val, "isoformat"):
             out[key] = val.isoformat()
+    # Legacy: "pending" bloqueaba el botón Aprobar en el panel
+    if out.get("approval_status") == "pending":
+        out["approval_status"] = None
     return out
 
 

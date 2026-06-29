@@ -10,6 +10,7 @@ from tools.ollama_chat import ollama_available
 from uipath_copilot.action_center_client import action_center_status
 from uipath_copilot.case_store import list_cases
 from uipath_copilot.maestro_client import maestro_status
+from uipath_copilot.platform_events import has_event, recent_events
 from uipath_copilot.settings import PUBLIC_BASE_URL
 
 
@@ -21,6 +22,14 @@ def build_platform_scorecard() -> dict[str, Any]:
         quotes = get_db().quotes.count_documents({})
     except Exception:
         clients = quotes = 0
+
+    last_tests = None
+    try:
+        from uipath_copilot.test_manager import load_last_results
+
+        last_tests = load_last_results()
+    except Exception:
+        pass
 
     bonuses = [
         {
@@ -91,46 +100,60 @@ def build_platform_scorecard() -> dict[str, Any]:
         {
             "id": "agent_builder",
             "name": "Agent Builder (cloud)",
-            "met": False,
-            "evidence": "Pendiente — ver ROADMAP_BONUS_COMMUNITY.md B2",
+            "met": has_event("agent_builder"),
+            "evidence": f"{PUBLIC_BASE_URL}/api/v1/agent-builder/intake",
             "points": "Bonus LLM UiPath",
+            "setup": f"HTTP tool → {PUBLIC_BASE_URL}/api/v1/agent-builder/intake",
         },
         {
             "id": "apps_case_app",
             "name": "Apps / Case App",
-            "met": False,
-            "evidence": "Pendiente — ver roadmap B3",
+            "met": has_event("apps_case_app") or any(c.get("approval_status") == "approved" for c in cases),
+            "evidence": f"{PUBLIC_BASE_URL}/apps/case/{{case_id}}",
             "points": "UX jurado",
+            "setup": f"Apps embed → {PUBLIC_BASE_URL}/apps/case/{{caseId}}",
         },
         {
             "id": "test_manager",
             "name": "Test Manager",
-            "met": False,
-            "evidence": "Ejecutar hackathon_smoke_test.sh → evidencia",
+            "met": bool(last_tests and last_tests.get("failed", 1) == 0),
+            "evidence": f"{PUBLIC_BASE_URL}/api/v1/test-manager/junit.xml",
             "points": "Calidad",
+            "setup": "POST /api/v1/test-manager/run → adjuntar JUnit",
         },
         {
             "id": "document_understanding",
             "name": "Document Understanding",
-            "met": False,
-            "evidence": "PDF ≤2 pág → webhook",
+            "met": has_event("document_understanding"),
+            "evidence": f"{PUBLIC_BASE_URL}/api/v1/document-understanding/upload",
             "points": "Bonus profundo",
+            "setup": f"DU → POST {PUBLIC_BASE_URL}/api/v1/document-understanding/ingest",
         },
     ]
 
     met_count = sum(1 for b in bonuses if b["met"])
     return {
         "public_base_url": PUBLIC_BASE_URL,
+        "public_urls": {
+            "dashboard": f"{PUBLIC_BASE_URL}/dashboard",
+            "webhook": f"{PUBLIC_BASE_URL}/api/v1/uipath-webhook",
+            "case_app": f"{PUBLIC_BASE_URL}/apps/case/{{case_id}}",
+            "agent_builder": f"{PUBLIC_BASE_URL}/api/v1/agent-builder/intake",
+            "test_manager_junit": f"{PUBLIC_BASE_URL}/api/v1/test-manager/junit.xml",
+            "document_understanding": f"{PUBLIC_BASE_URL}/api/v1/document-understanding/upload",
+        },
         "uipath_maestro": ms,
         "action_center": action_center_status(),
         "bonuses_met": met_count,
         "bonuses_total": len(bonuses),
         "score_pct": round(100 * met_count / len(bonuses)),
         "bonuses": bonuses,
+        "recent_platform_events": recent_events(limit=8),
+        "last_test_run": last_tests,
         "next_steps": [
-            "Maestro Approval → User task (Action Center)",
-            "Agent Builder → HTTP tool al webhook",
-            "Apps Case App → aprobación móvil",
-            "Test Manager → adjuntar hackathon_smoke_test.sh",
+            "Agent Builder: crear agente + HTTP tool (ver data/uipath_agent_builder/)",
+            f"Apps: embed {PUBLIC_BASE_URL}/apps/case/{{caseId}}",
+            f"Test Manager: curl -X POST {PUBLIC_BASE_URL}/api/v1/test-manager/run",
+            f"DU: subir PDF a {PUBLIC_BASE_URL}/api/v1/document-understanding/upload",
         ],
     }

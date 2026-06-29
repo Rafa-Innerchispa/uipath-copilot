@@ -81,6 +81,10 @@ def status():
             "consultations": "GET /api/v1/consultations",
             "run_full": "POST /api/v1/consultations/{id}/run-full",
             "platform_scorecard": "GET /api/v1/platform-scorecard",
+            "agent_builder": "POST /api/v1/agent-builder/intake",
+            "document_understanding": "POST /api/v1/document-understanding/upload",
+            "test_manager": "POST /api/v1/test-manager/run",
+            "case_app": "GET /apps/case/{case_id}",
         },
     }
 
@@ -88,12 +92,29 @@ def status():
 _DASHBOARD_HTML = Path(__file__).resolve().parent / "static" / "jurado_dashboard.html"
 
 
+_CASE_APP_HTML = Path(__file__).resolve().parent / "static" / "case_app.html"
+
+
+@app.get("/apps/case/{case_id}", response_class=HTMLResponse)
+def case_app_page(case_id: str):
+    """Case App móvil — URL pública para UiPath Apps (ngrok /uipath/apps/case/...)."""
+    if _CASE_APP_HTML.is_file():
+        return HTMLResponse(
+            _CASE_APP_HTML.read_text(encoding="utf-8"),
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
+        )
+    return HTMLResponse("<h1>Case App no encontrada</h1>", status_code=404)
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/jurado", response_class=HTMLResponse)
 def jurado_dashboard():
     """Panel web público para jurado (ngrok /uipath/dashboard)."""
     if _DASHBOARD_HTML.is_file():
-        return HTMLResponse(_DASHBOARD_HTML.read_text(encoding="utf-8"))
+        return HTMLResponse(
+            _DASHBOARD_HTML.read_text(encoding="utf-8"),
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
+        )
     return HTMLResponse("<h1>Dashboard no encontrado</h1>", status_code=404)
 
 

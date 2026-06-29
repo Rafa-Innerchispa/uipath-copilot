@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="ngrok-skip-browser-warning" content="true" />
+  <title>PC Doctor — Case App</title>
+  <style>
+    :root { --bg:#0b1120; --surface:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --accent:#60a5fa; }
+    * { box-sizing:border-box; }
+    body { font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:1rem; }
+    .card { background:var(--surface); border:1px solid #334155; border-radius:12px; padding:1rem; margin-bottom:1rem; }
+    h1 { font-size:1.1rem; margin:0 0 .5rem; }
+    .pill { display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.75rem; font-weight:700; }
+    .pill.ok { background:#14532d; color:var(--ok); }
+    .pill.warn { background:#451a03; color:var(--warn); }
+    .pill.bad { background:#450a0a; color:var(--bad); }
+    button { border:0; border-radius:8px; padding:.65rem 1rem; font-weight:700; cursor:pointer; width:100%; margin-top:.5rem; }
+    .approve { background:#16a34a; color:#fff; }
+    .reject { background:#b91c1c; color:#fff; }
+    .link { background:#334155; color:var(--text); text-decoration:none; display:block; text-align:center; }
+    .report { white-space:pre-wrap; font-size:.78rem; background:#020617; padding:.75rem; border-radius:8px; max-height:240px; overflow:auto; }
+    .err { color:var(--bad); }
+    textarea { width:100%; background:#0f172a; border:1px solid #334155; color:var(--text); border-radius:8px; padding:.5rem; margin-top:.5rem; }
+  </style>
+</head>
+<body>
+  <div id="loading" class="card">Loading case…</div>
+  <div id="app" style="display:none">
+    <div class="card">
+      <h1 id="title">—</h1>
+      <p id="meta" style="color:var(--muted);font-size:.85rem;margin:0"></p>
+      <p id="status-pill" style="margin:.75rem 0"></p>
+    </div>
+    <div class="card">
+      <strong>Findings</strong>
+      <div id="findings"></div>
+    </div>
+    <div class="card" id="hitl" style="display:none">
+      <textarea id="comment" rows="2" placeholder="Comment (optional)"></textarea>
+      <button type="button" class="approve" id="btn-approve">Approve</button>
+      <button type="button" class="reject" id="btn-reject">Reject</button>
+    </div>
+    <div class="card">
+      <strong>Report</strong>
+      <div class="report" id="report">—</div>
+    </div>
+    <a class="card link" id="dashboard-link" href="#">Open full dashboard</a>
+  </div>
+  <script>
+    const caseId = window.location.pathname.split("/").filter(Boolean).pop();
+    function apiBase() {
+      const p = window.location.pathname;
+      const i = p.indexOf("/apps/case");
+      if (i > 0) return p.slice(0, i);
+      if (p.startsWith("/uipath")) return "/uipath";
+      return "";
+    }
+    async function load() {
+      const base = apiBase();
+      const r = await fetch(`${base}/api/v1/apps/case/${encodeURIComponent(caseId)}`, {
+        headers: { "ngrok-skip-browser-warning": "true", Accept: "application/json" },
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }
+    function pill(text, cls) { return `<span class="pill ${cls}">${text}</span>`; }
+    async function decide(decision) {
+      const base = apiBase();
+      const comment = document.getElementById("comment").value || "";
+      const r = await fetch(`${base}/api/v1/cases/${encodeURIComponent(caseId)}/human-decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
+        body: JSON.stringify({ decision, comment }),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      location.reload();
+    }
+    load().then(data => {
+      const c = data.case;
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      document.getElementById("title").textContent = c.client_name || "Case " + caseId.slice(0, 8);
+      document.getElementById("meta").textContent = `${c.stage} · ${(c.stages_completed || []).join(" → ")}`;
+      const st = c.approval_status;
+      document.getElementById("status-pill").innerHTML = st === "approved" ? pill("APPROVED", "ok")
+        : st === "rejected" ? pill("REJECTED", "bad")
+        : data.can_approve ? pill("PENDING APPROVAL", "warn") : pill(c.stage || "—", "warn");
+      document.getElementById("findings").innerHTML = (c.findings || []).slice(0, 5).map(f =>
+        `<div style="margin:.35rem 0;font-size:.82rem">${f.passed ? "✅" : "🛑"} ${f.gate}: ${f.message || ""}</div>`
+      ).join("") || "—";
+      document.getElementById("report").textContent = c.report_markdown || c.analysis || "—";
+      document.getElementById("dashboard-link").href = data.urls.dashboard_deep_link;
+      if (data.can_approve && st !== "approved" && st !== "rejected") {
+        document.getElementById("hitl").style.display = "block";
+        document.getElementById("btn-approve").onclick = () => decide("approve");
+        document.getElementById("btn-reject").onclick = () => decide("reject");
+      }
+    }).catch(e => {
+      document.getElementById("loading").innerHTML = `<span class="err">Error: ${e.message}</span>`;
+    });
+  </script>
+</body>
+</html>
