@@ -40,14 +40,18 @@ UIPATH_ORG_UNIT_ID = os.getenv("UIPATH_ORG_UNIT_ID", "")
 # Token OAuth va a nivel organización, NO al tenant (evita HTML en lugar de JSON)
 _org = os.getenv("UIPATH_ORGANIZATION", "").strip()
 if not _org and UIPATH_BASE_URL:
-    parts = UIPATH_BASE_URL.replace("https://", "").split("/")
-    if len(parts) >= 2 and parts[0] == "cloud.uipath.com":
-        _org = parts[1]
+    host_and_path = UIPATH_BASE_URL.replace("https://", "").split("/")
+    host = host_and_path[0] if host_and_path else ""
+    if host in ("cloud.uipath.com", "staging.uipath.com") and len(host_and_path) >= 2:
+        _org = host_and_path[1]
 UIPATH_ORGANIZATION = _org
-UIPATH_IDENTITY_TOKEN_URL = os.getenv(
-    "UIPATH_IDENTITY_TOKEN_URL",
-    f"https://cloud.uipath.com/{_org}/identity_/connect/token" if _org else "",
-)
+_default_token = ""
+if _org and UIPATH_BASE_URL:
+    if "staging.uipath.com" in UIPATH_BASE_URL:
+        _default_token = f"https://staging.uipath.com/{_org}/identity_/connect/token"
+    elif "cloud.uipath.com" in UIPATH_BASE_URL:
+        _default_token = f"https://cloud.uipath.com/{_org}/identity_/connect/token"
+UIPATH_IDENTITY_TOKEN_URL = os.getenv("UIPATH_IDENTITY_TOKEN_URL", _default_token)
 
 OLLAMA_MODEL_ANALYSIS = os.getenv("OLLAMA_MODEL_ANALYSIS", "qwen2.5:14b-instruct-q4_K_M")
 OLLAMA_MODEL_CODER = os.getenv("OLLAMA_MODEL_CODER", "qwen2.5-coder:7b")
