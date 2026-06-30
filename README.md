@@ -9,11 +9,13 @@
 
 ## Project Description
 
-PC Doctor S.A. runs field inspections for residential communities in Ecuador. Operational exceptions—duplicate clients, incomplete hub data, quote gates blocking delivery, reports with placeholder text—stop the workflow and require human intervention. There is no centralized case orchestration or audit trail.
+PC Doctor S.A. runs field inspections for residential communities in Ecuador (MSP field operations). Operational exceptions—**missing site contract PDFs**, **duplicate customer tax IDs (RUC)**, **quote gates blocking delivery**, and **reports with unresolved placeholders** (e.g. `@today`)—stop the workflow and require human intervention. There is no centralized case orchestration or audit trail.
 
-**PC Doctor Maestro Copilot** connects **UiPath Maestro Case** (Automation Cloud) to a sovereign Python backend on port **8097**. Maestro governs the case lifecycle; the backend executes real remediation with **MongoDB PC Doctor** (37+ clients, 22+ quotes), **Playbook gates**, **local Ollama LLM** analysis, and **WhatsApp HITL** to the operator. No mock JSON: every demo case uses live business data.
+**PC Doctor Maestro Copilot** is a governed case-management engine that enforces **Standard Operating Procedure (SOP) gates** before any commercial ticket progresses. It connects **UiPath Maestro Case** (UiPath Labs) to a sovereign Python backend on port **8097**. Maestro governs the case lifecycle; the backend executes real remediation with **MongoDB PC Doctor** (37+ clients, 22+ quotes), **Playbook gates**, **local Ollama LLM** analysis, and **WhatsApp HITL** to the operator. No mock JSON: every demo case uses live business data.
 
 **Flow:** Maestro Cloud (Intake → Investigation → Remediation → Approval) → HTTP webhook → FastAPI copilot → MongoDB + Ollama + gates → human approval (Action Center / web panel / WhatsApp) → case closed with full audit in MongoDB.
+
+**UiPath Labs (official hackathon org):** https://staging.uipath.com/hackathon26_1028/
 
 ---
 
@@ -47,10 +49,9 @@ Primary execution and business logic run in the **Coded Agent (Python)**. Maestr
 | **UiPath for Coding Agents (Cursor)** | AI-assisted development of integration | GitHub + `AGENTS.md` + `.cursor/rules/` |
 | **External Application (OAuth)** | Backend calls Orchestrator / OData APIs | `UIPATH_CLIENT_ID` in `.env` |
 
-**UiPath Labs environment:** built in the sandbox org assigned at registration.  
-Format: `https://staging.uipath.com/hackathon26_XXX/` — replace `XXX` with your team org slug from the **UiPath Labs access email** (Devpost field: *"What is the UiPath Labs link/environment URL where you built your solution?"*).
+**UiPath Labs environment (Devpost):** https://staging.uipath.com/hackathon26_1028/
 
-If you also use Community Cloud: `https://cloud.uipath.com/innerchispa/DefaultTenant`
+Legacy Community dev org (optional): https://cloud.uipath.com/innerchispa/DefaultTenant
 
 ---
 
@@ -87,13 +88,16 @@ OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL_ANALYSIS=qwen2.5:14b-instruct-q4_K_M
 ```
 
-Full Maestro Cloud integration (add):
+Full Maestro Cloud integration — **UiPath Labs** (current production demo):
 
 ```env
-UIPATH_BASE_URL=https://cloud.uipath.com/<tenant>/<org>/
-UIPATH_CLIENT_ID=<External Application client id>
-UIPATH_CLIENT_SECRET=<secret — or use .uipath_secret file>
-UIPATH_ORG_UNIT_ID=<folder id>
+UIPATH_COPILOT_PUBLIC_URL=https://sworn-profusely-alongside.ngrok-free.dev/uipath
+UIPATH_BASE_URL=https://staging.uipath.com/hackathon26_1028/DefaultTenant
+UIPATH_ORGANIZATION=hackathon26_1028
+UIPATH_IDENTITY_TOKEN_URL=https://staging.uipath.com/hackathon26_1028/identity_/connect/token
+UIPATH_CLIENT_ID=<External Application client id from Labs Admin>
+UIPATH_CLIENT_SECRET_FILE=.uipath_secret
+UIPATH_ORG_UNIT_ID=<Orchestrator folder id — fid= in URL>
 UIPATH_SCOPE=OR.Administration OR.Execution OR.Monitoring
 EVOLUTION_BASE_URL=http://127.0.0.1:8082
 EVOLUTION_API_KEY=<key>
@@ -164,15 +168,32 @@ curl http://localhost:8097/api/v1/test-manager/junit.xml
 
 ## API Reference
 
+**Public base (ngrok):** `https://sworn-profusely-alongside.ngrok-free.dev/uipath`  
+**Local base:** `http://localhost:8097`
+
 | Method | Route | Description |
 |--------|------|-------------|
-| GET | `/status` | Health: MongoDB, Ollama, Evolution, UiPath OAuth |
-| POST | `/api/v1/uipath-webhook` | Maestro Case webhook entry |
-| GET | `/api/v1/cases` | Case audit trail |
-| GET | `/api/v1/platform-scorecard` | UiPath platform usage checklist |
-| GET | `/api/v1/demo/scenarios` | Curated demo scenarios |
-| POST | `/api/v1/consultations/{id}/run-full` | Run 4-stage flow |
+| GET | `/status` | Health: MongoDB, Ollama, Evolution, UiPath OAuth (Labs) |
 | GET | `/dashboard` | Judge / operator web panel |
+| GET | `/apps/case/{case_id}` | Mobile Case App (UiPath Apps pattern) |
+| POST | `/api/v1/uipath-webhook` | **Maestro Case webhook entry** (primary) |
+| GET | `/api/v1/cases` | Case audit trail |
+| GET | `/api/v1/cases/{case_id}` | Single case detail |
+| POST | `/api/v1/cases/{case_id}/decision` | HITL approve / reject |
+| POST | `/api/v1/cases/{case_id}/continue-flow` | Continue 4-stage flow server-side |
+| GET | `/api/v1/platform-scorecard` | UiPath platform usage checklist (12/12) |
+| POST | `/api/v1/platform-scorecard/verify-all` | Run smoke verification |
+| GET | `/api/v1/demo/scenarios` | Curated demo scenarios |
+| GET | `/api/v1/consultations` | Same catalog (alias) |
+| POST | `/api/v1/consultations/{id}/run-full` | Run full 4-stage scenario |
+| POST | `/api/v1/agent-builder/intake` | Agent Builder HTTP tool target |
+| GET | `/api/v1/agent-builder/openapi` | OpenAPI for Agent Builder |
+| POST | `/api/v1/document-understanding/upload` | PDF upload (DU demo) |
+| POST | `/api/v1/document-understanding/ingest` | DU field ingest → webhook |
+| POST | `/api/v1/test-manager/run` | Run smoke test suite |
+| GET | `/api/v1/test-manager/junit.xml` | JUnit XML for Test Manager |
+| GET | `/api/v1/project-docs` | Project documentation index |
+| GET | `/api/v1/ui-config` | Public URLs for UiPath cloud setup |
 
 ---
 
