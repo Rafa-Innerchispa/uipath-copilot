@@ -1,8 +1,11 @@
 {
-    "project_name": "uipath-copilot",
-    "hackathon_name": "UiPath AgentHack 2026",
-    "hackathon_url": "https://uipath-agenthack.devpost.com/",
-    "assigned_port": 8097,
-    "server_ip": "192.168.1.4",
-    "visibility": "public"
+  "project_name": "uipath-copilot",
+  "display_name": "UiPath Copilot",
+  "hackathon_name": null,
+  "hackathon_url": null,
+  "assigned_port": 8097,
+  "server_ip": "192.168.1.4",
+  "lifecycle": "always_alive",
+  "created_by": "CURSOR",
+  "created_at": "2026-07-06T20:40:45.479465+00:00"
 }
