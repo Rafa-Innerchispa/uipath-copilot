@@ -69,10 +69,16 @@ class WebhookPayload(BaseModel):
 
 
 def _notify_operator(report_md: str, case_id: str) -> dict[str, Any] | None:
-    if not OPERATOR_WHATSAPP or not evolution_available():
+    if not OPERATOR_WHATSAPP:
         return None
+    if not evolution_available():
+        log_activity("warn", "WA", f"Evolution offline — no WhatsApp para caso {case_id}")
+        return {"status": "skipped", "message": "Evolution no disponible"}
     text = f"*PC Doctor Maestro Case*\nCaso: `{case_id}`\n\n{report_md[:3500]}"
-    return send_whatsapp(OPERATOR_WHATSAPP, text)
+    result = send_whatsapp(OPERATOR_WHATSAPP, text)
+    if result.get("status") != "sent":
+        log_activity("warn", "WA", f"WhatsApp falló: {result.get('message', result)}")
+    return result
 
 
 class HumanDecisionPayload(BaseModel):

@@ -32,7 +32,7 @@ app.include_router(router)
 
 @app.on_event("startup")
 def _startup_log():
-    from tools.evolution_api import evolution_available
+    from tools.evolution_api import evolution_available, wait_evolution_ready
 
     from uipath_copilot.maestro_client import maestro_status
 
@@ -45,7 +45,8 @@ def _startup_log():
     except Exception as exc:
         log_connection_check("MongoDB", False, str(exc))
     log_connection_check("Ollama :11434", ollama_available())
-    log_connection_check("WhatsApp Evolution", evolution_available())
+    evo_ok = wait_evolution_ready(max_wait_sec=90)
+    log_connection_check("WhatsApp Evolution", evo_ok, "ready" if evo_ok else "timeout — Docker :8082")
 
 
 @app.get("/status")

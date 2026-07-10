@@ -1,7 +1,7 @@
 [Unit]
 Description=UiPath Maestro Case Copilot PC Doctor :8097
-After=network-online.target mongod.service
-Wants=network-online.target
+After=network-online.target mongod.service docker.service
+Wants=network-online.target docker.service
 
 [Service]
 Type=simple
